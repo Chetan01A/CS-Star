@@ -91,6 +91,9 @@ class VerifyEmailRequest(BaseModel):
 class GoogleLoginRequest(BaseModel):
     token: str
 
+class ResendVerificationRequest(BaseModel):
+    email: str
+
 GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
 
 # Signup
@@ -301,6 +304,29 @@ def verify_email(req: VerifyEmailRequest, request: Request, db: Session = Depend
     
     return {"message": "Email successfully verified. You can now log in."}
 
+# Resend Verification Code
+@router.post("/resend-verification")
+@limiter.limit("3/minute")
+def resend_verification(req: ResendVerificationRequest, request: Request, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == req.email).first()
+    
+    if not user:
+        # Avoid user enumeration, but since this is for verification, 
+        # we might want to be slightly more helpful or stay silent.
+        return {"message": "If that email is registered and not yet verified, a new code has been sent."}
+        
+    if user.is_verified:
+        return {"message": "Email already verified. Please log in."}
+        
+    # Generate new code
+    verification_code = "{:06d}".format(secrets.randbelow(1_000_000))
+    user.verification_code = verification_code
+    db.commit()
+    
+    send_verification_email(user.email, verification_code)
+    
+    return {"message": "A new verification code has been sent."}
+
 class TwoFactorSetupResponse(BaseModel):
     secret: str
     provisioning_uri: str
@@ -347,6 +373,12 @@ def verify_2fa(req: TwoFactorVerifyRequest, request: Request, db: Session = Depe
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
+def _as_utc_aware(value: datetime) -> datetime:
+    # SQLite often returns naive datetimes; treat them as UTC for token expiry checks.
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
 # Refresh Token
 @router.post("/refresh")
 @limiter.limit("5/minute")
@@ -356,7 +388,7 @@ def refresh_token(req: RefreshTokenRequest, request: Request, db: Session = Depe
     if not db_token:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
         
-    if db_token.expires_at < datetime.now(timezone.utc):
+    if _as_utc_aware(db_token.expires_at) < datetime.now(timezone.utc):
         db.delete(db_token)
         db.commit()
         raise HTTPException(status_code=401, detail="Refresh token expired, please log in again")
@@ -372,3 +404,16 @@ def refresh_token(req: RefreshTokenRequest, request: Request, db: Session = Depe
     )
     
     return {"access_token": new_access_token, "token_type": "bearer"}
+
+# Get Current User Info
+@router.get("/me")
+def get_me(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "is_verified": current_user.is_verified,
+        "totp_enabled": current_user.totp_enabled,
+        "profile_pic": current_user.profile_pic,
+        "bio": current_user.bio
+    }
