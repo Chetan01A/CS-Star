@@ -43,6 +43,17 @@ function Notifications() {
     }
   };
 
+  const handleNotificationClick = (notification) => {
+    if (notification.type === 'follow' && notification.sender_id) {
+      navigate(`/profile/${notification.sender_id}`);
+      return;
+    }
+
+    if (notification.post_id) {
+      navigate('/');
+    }
+  };
+
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '64px 24px' }}>
       <header style={{ marginBottom: '40px' }}>
@@ -74,7 +85,7 @@ function Notifications() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
                   className="glass"
-                  onClick={() => n.post_id ? navigate(`/`) : navigate(`/search`)} // Simple navigation
+                  onClick={() => handleNotificationClick(n)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -92,7 +103,15 @@ function Notifications() {
                       background: 'var(--accent-gradient)', display: 'flex',
                       alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'
                     }}>
-                      {n.sender_username?.charAt(0).toUpperCase() || '?'}
+                      {n.sender_profile_pic ? (
+                        <img
+                          src={`http://localhost:8000/${n.sender_profile_pic}`}
+                          alt={n.sender_username || 'User'}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                        />
+                      ) : (
+                        n.sender_username?.charAt(0).toUpperCase() || '?'
+                      )}
                     </div>
                     <div style={{
                       position: 'absolute', bottom: -4, right: -4,

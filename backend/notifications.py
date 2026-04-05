@@ -6,6 +6,32 @@ from security import get_current_user
 
 router = APIRouter()
 
+
+def create_notification(
+    db: Session,
+    *,
+    recipient_id: int,
+    sender_id: int,
+    type: str,
+    post_id: int | None = None,
+    comment_id: int | None = None,
+    text: str | None = None,
+):
+    if recipient_id == sender_id:
+        return None
+
+    notification = Notification(
+        recipient_id=recipient_id,
+        sender_id=sender_id,
+        type=type,
+        post_id=post_id,
+        comment_id=comment_id,
+        text=text,
+        is_seen=False,
+    )
+    db.add(notification)
+    return notification
+
 @router.get("/")
 def get_notifications(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     notifications = db.query(Notification).options(
@@ -20,6 +46,7 @@ def get_notifications(db: Session = Depends(get_db), current_user: User = Depend
         result.append({
             "id": n.id,
             "type": n.type,
+            "sender_id": n.sender_id,
             "sender_username": n.sender.username,
             "sender_profile_pic": n.sender.profile_pic,
             "post_id": n.post_id,

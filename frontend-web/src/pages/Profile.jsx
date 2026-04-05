@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { api } from '../api';
-import { Edit3, Grid, ShieldCheck, ShieldAlert, UserPlus, UserMinus, Clapperboard, Heart, MessageCircle, Send, X, MoreHorizontal, Pin, BarChart3, Trash2, EyeOff, Download, MessageSquareOff, Pencil, Bookmark, CircleHelp, Expand, ThumbsUp, ThumbsDown, SlidersHorizontal, Flag } from 'lucide-react';
+import { Edit3, Grid, ShieldCheck, ShieldAlert, UserPlus, UserMinus, Clapperboard, Heart, MessageCircle, Send, X, MoreHorizontal, Pin, BarChart3, Trash2, EyeOff, Download, MessageSquareOff, Pencil, Bookmark, CircleHelp, Expand, ThumbsUp, ThumbsDown, SlidersHorizontal, Flag, PlaySquare, Camera, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_BASE_URL = 'http://localhost:8000';
@@ -36,7 +37,7 @@ const renderProfileMedia = (item, mediaProps = {}, style = {}) => {
 
 const MediaCard = ({ item, onOpen }) => {
   return (
-    <motion.div
+    <motion.button
       layout
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
@@ -46,31 +47,408 @@ const MediaCard = ({ item, onOpen }) => {
         aspectRatio: '1 / 1',
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: '20px',
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid var(--card-border)',
+        borderRadius: '0',
+        background: '#0b0d10',
+        border: 'none',
+        padding: 0,
         cursor: 'pointer'
       }}
     >
       {renderProfileMedia(item)}
 
+      {item.media_type === 'video' && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            color: 'white'
+          }}
+        >
+          <PlaySquare size={18} fill="rgba(255,255,255,0.95)" strokeWidth={1.8} />
+        </div>
+      )}
+    </motion.button>
+  );
+};
+
+const ReelCard = ({ item, onOpen }) => {
+  return (
+    <motion.button
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -3 }}
+      onClick={() => onOpen(item)}
+      style={{
+        position: 'relative',
+        aspectRatio: '9 / 16',
+        width: '100%',
+        overflow: 'hidden',
+        borderRadius: '0',
+        border: 'none',
+        padding: 0,
+        cursor: 'pointer',
+        background: '#050505'
+      }}
+    >
+      {renderProfileMedia(item)}
       <div
         style={{
           position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.18) 38%, rgba(0,0,0,0.82) 88%, rgba(0,0,0,0.96))'
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: '12px',
           left: '12px',
-          right: '12px',
-          bottom: '12px',
-          padding: '10px 12px',
-          borderRadius: '14px',
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.82))',
-          color: 'white'
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          fontWeight: 800,
+          fontSize: '1rem'
         }}
       >
-        <p style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {item.caption || (item.media_type === 'video' ? 'Video post' : 'Photo post')}
-        </p>
+        <span>{item.username?.[0]?.toLowerCase() || 'm'}</span>
+        <span style={{ color: '#e4d84c', fontSize: '0.9rem' }}>•</span>
       </div>
-    </motion.div>
+      <div
+        style={{
+          position: 'absolute',
+          left: '10px',
+          right: '10px',
+          bottom: '10px',
+          color: 'white',
+          display: 'grid',
+          gap: '6px',
+          textAlign: 'center'
+        }}
+      >
+        <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 700, opacity: 0.9 }}>
+          {item.username}
+        </p>
+        <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, lineHeight: 1.25, textTransform: 'uppercase' }}>
+          {item.caption || 'Watch this reel'}
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800, justifyContent: 'flex-start', fontSize: '0.95rem' }}>
+          <Eye size={16} />
+          <span>{item.likes_count || 0}</span>
+        </div>
+      </div>
+    </motion.button>
+  );
+};
+
+const ProfileReelsModal = ({ reels, selectedReelId, profile, isFollowing, onClose, onOpenProfile, onToggleFollow, onUpdatePost }) => {
+  const [currentReelId, setCurrentReelId] = useState(selectedReelId);
+  const [likedMap, setLikedMap] = useState({});
+  const [commentsByPost, setCommentsByPost] = useState({});
+  const [loadingCommentsMap, setLoadingCommentsMap] = useState({});
+  const [newCommentMap, setNewCommentMap] = useState({});
+  const commentsSectionRef = useRef(null);
+  const commentInputRef = useRef(null);
+  const lastScrollSwitchRef = useRef(0);
+  const isNarrowViewport = typeof window !== 'undefined' && window.innerWidth < 960;
+
+  useEffect(() => {
+    setCurrentReelId(selectedReelId);
+  }, [selectedReelId]);
+
+  const currentIndex = Math.max(0, reels.findIndex((reel) => reel.post_id === currentReelId));
+  const currentReel = reels[currentIndex] || reels[0];
+
+  const fetchComments = async (postId) => {
+    setLoadingCommentsMap((prev) => ({ ...prev, [postId]: true }));
+    try {
+      const data = await api.get(`/post/comments/${postId}`);
+      setCommentsByPost((prev) => ({ ...prev, [postId]: data.comments || [] }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingCommentsMap((prev) => ({ ...prev, [postId]: false }));
+    }
+  };
+
+  const handleToggleLike = async (reel) => {
+    const wasLiked = likedMap[reel.post_id] ?? !!reel.is_liked;
+    const nextLiked = !wasLiked;
+
+    setLikedMap((prev) => ({ ...prev, [reel.post_id]: nextLiked }));
+    onUpdatePost(reel.post_id, {
+      is_liked: nextLiked,
+      likes_count: Math.max(0, (reel.likes_count || 0) + (nextLiked ? 1 : -1)),
+    });
+
+    try {
+      if (nextLiked) {
+        await api.post(`/post/like?post_id=${reel.post_id}`);
+      } else {
+        await api.post(`/post/unlike?post_id=${reel.post_id}`);
+      }
+    } catch (err) {
+      console.error(err);
+      setLikedMap((prev) => ({ ...prev, [reel.post_id]: wasLiked }));
+      onUpdatePost(reel.post_id, {
+        is_liked: wasLiked,
+        likes_count: reel.likes_count || 0,
+      });
+    }
+  };
+
+  const handleToggleComments = async (postId) => {
+    if (!commentsByPost[postId]) {
+      await fetchComments(postId);
+    }
+
+    requestAnimationFrame(() => {
+      commentsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      commentInputRef.current?.focus();
+    });
+  };
+
+  const handleAddComment = async (event, reel) => {
+    event.preventDefault();
+    const text = (newCommentMap[reel.post_id] || '').trim();
+    if (!text) return;
+
+    try {
+      await api.post(`/post/comment?post_id=${reel.post_id}&text=${encodeURIComponent(text)}`);
+      setNewCommentMap((prev) => ({ ...prev, [reel.post_id]: '' }));
+      onUpdatePost(reel.post_id, {
+        comments_count: (reel.comments_count || 0) + 1,
+      });
+      await fetchComments(reel.post_id);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleShare = async (reel) => {
+    try {
+      await api.post(`/post/share?post_id=${reel.post_id}`);
+      const nextShareCount = (reel.share_count || 0) + 1;
+      onUpdatePost(reel.post_id, { share_count: nextShareCount });
+      await navigator.clipboard.writeText(`${window.location.origin}/profile/${reel.user_id}`);
+      alert('Reel link copied');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleNextReel = async () => {
+    if (!reels.length) return;
+    const nextIndex = currentIndex === reels.length - 1 ? 0 : currentIndex + 1;
+    const nextReel = reels[nextIndex];
+    setCurrentReelId(nextReel.post_id);
+    if (nextReel && !commentsByPost[nextReel.post_id]) {
+      await fetchComments(nextReel.post_id);
+    }
+  };
+
+  const handlePreviousReel = async () => {
+    if (!reels.length) return;
+    const previousIndex = currentIndex === 0 ? reels.length - 1 : currentIndex - 1;
+    const previousReel = reels[previousIndex];
+    setCurrentReelId(previousReel.post_id);
+    if (previousReel && !commentsByPost[previousReel.post_id]) {
+      await fetchComments(previousReel.post_id);
+    }
+  };
+
+  const handleWheelNavigation = (event) => {
+    if (reels.length <= 1) return;
+
+    const now = Date.now();
+    if (Math.abs(event.deltaY) < 30 || now - lastScrollSwitchRef.current < 450) {
+      return;
+    }
+
+    lastScrollSwitchRef.current = now;
+
+    if (event.deltaY > 0) {
+      handleNextReel();
+    } else {
+      handlePreviousReel();
+    }
+  };
+
+  useEffect(() => {
+    if (currentReel && !commentsByPost[currentReel.post_id]) {
+      fetchComments(currentReel.post_id);
+    }
+  }, [currentReel?.post_id]);
+
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  return createPortal(
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.82)',
+          backdropFilter: 'blur(6px)',
+          zIndex: 9999,
+          padding: isNarrowViewport ? '12px' : '24px',
+          boxSizing: 'border-box',
+          display: 'grid',
+          placeItems: 'center',
+          overflow: 'auto'
+        }}
+      >
+        <motion.div
+          initial={{ scale: 0.98, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.98, opacity: 0 }}
+          onClick={(e) => e.stopPropagation()}
+          onWheel={handleWheelNavigation}
+          style={{
+            width: isNarrowViewport ? 'min(100%, 460px)' : 'min(1220px, calc(100vw - 64px), calc(100dvw - 64px))',
+            height: isNarrowViewport ? 'min(100%, calc(100vh - 24px), calc(100dvh - 24px))' : 'min(900px, calc(100vh - 48px), calc(100dvh - 48px))',
+            maxWidth: isNarrowViewport ? 'calc(100vw - 24px)' : 'calc(100vw - 64px)',
+            maxHeight: isNarrowViewport ? 'calc(100vh - 24px)' : 'calc(100vh - 48px)',
+            boxSizing: 'border-box',
+            borderRadius: isNarrowViewport ? '12px' : '10px',
+            overflow: 'hidden',
+            background: '#121212',
+            border: '1px solid rgba(255,255,255,0.06)',
+            display: 'grid',
+            gridTemplateColumns: isNarrowViewport ? '1fr' : 'minmax(520px, 1fr) 480px',
+            gridTemplateRows: isNarrowViewport ? 'minmax(260px, 52vh) minmax(0, 1fr)' : '1fr',
+            isolation: 'isolate',
+            margin: 'auto'
+          }}
+        >
+          <div style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0, position: 'relative', padding: 0 }}>
+            {currentReel && (
+              <video
+                key={currentReel.post_id}
+                src={`${API_BASE_URL}/${currentReel.image_url}`}
+                loop
+                playsInline
+                autoPlay
+                muted
+                controls={false}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain',
+                  objectPosition: 'center',
+                  display: 'block',
+                  background: '#000'
+                }}
+              />
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, background: '#1c1c1e' }}>
+            <div style={{ padding: '16px 18px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                <button onClick={() => currentReel && onOpenProfile(currentReel.user_id)} style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', border: 'none', background: 'rgba(255,255,255,0.08)', color: 'white', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+                  {currentReel?.profile_pic ? (
+                    <img src={`${API_BASE_URL}/${currentReel.profile_pic}`} alt={currentReel.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    currentReel?.username?.[0]?.toUpperCase() || '?'
+                  )}
+                </button>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <button onClick={() => currentReel && onOpenProfile(currentReel.user_id)} style={{ background: 'transparent', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', padding: 0, fontSize: '1rem' }}>
+                      {currentReel?.username || profile.username}
+                    </button>
+                    {!currentReel?.is_owner && (
+                      <button onClick={onToggleFollow} style={{ background: 'transparent', border: 'none', color: '#5f7cff', cursor: 'pointer', padding: 0, fontWeight: 800, fontSize: '0.95rem' }}>
+                        {isFollowing ? 'Following' : 'Follow'}
+                      </button>
+                    )}
+                  </div>
+                  <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.72)', fontSize: '0.84rem' }}>
+                    {currentReel?.likes_count || 0}
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0 }}>
+                  <X size={22} />
+                </button>
+              </div>
+            </div>
+            {currentReel && (
+              <>
+                <div style={{ padding: '16px 18px 0', display: 'flex', alignItems: 'center', gap: '18px', color: 'white' }}>
+                  <button onClick={() => handleToggleLike(currentReel)} style={{ background: 'transparent', border: 'none', color: 'white', display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', padding: 0 }}>
+                    <Heart size={24} fill={(likedMap[currentReel.post_id] ?? !!currentReel.is_liked) ? '#ff4d67' : 'none'} color={(likedMap[currentReel.post_id] ?? !!currentReel.is_liked) ? '#ff4d67' : 'white'} />
+                  </button>
+                  <button onClick={() => handleToggleComments(currentReel.post_id)} style={{ background: 'transparent', border: 'none', color: 'white', display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', padding: 0 }}>
+                    <MessageCircle size={24} />
+                  </button>
+                  <button onClick={() => handleShare(currentReel)} style={{ background: 'transparent', border: 'none', color: 'white', display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', padding: 0 }}>
+                    <Send size={24} />
+                  </button>
+                  <div style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.72)', fontSize: '0.9rem', fontWeight: 700 }}>
+                    Reel {currentIndex + 1} / {reels.length}
+                  </div>
+                </div>
+
+                <div style={{ padding: '14px 18px 8px', color: 'white' }}>
+                  <p style={{ margin: 0, fontWeight: 700 }}>
+                    Liked by <span style={{ opacity: 0.86 }}>{profile.username}</span> and others
+                  </p>
+                  <p style={{ margin: '8px 0 0', lineHeight: 1.55 }}>
+                    <strong>{currentReel.username}</strong> <span style={{ opacity: 0.95 }}>{currentReel.caption || 'Watch this reel.'}</span>
+                  </p>
+                </div>
+
+                <div ref={commentsSectionRef} style={{ flex: 1, overflowY: 'auto', padding: '8px 18px 16px', display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                  {loadingCommentsMap[currentReel.post_id] ? (
+                    <p style={{ margin: 0, color: 'rgba(255,255,255,0.65)' }}>Loading comments...</p>
+                  ) : (commentsByPost[currentReel.post_id] || []).length === 0 ? (
+                    <p style={{ margin: 0, color: 'rgba(255,255,255,0.65)' }}>No comments yet.</p>
+                  ) : (
+                    (commentsByPost[currentReel.post_id] || []).map((comment) => (
+                      <p key={comment.id} style={{ margin: 0, color: 'white', lineHeight: 1.5, fontSize: '0.92rem' }}>
+                        <strong>{comment.username}</strong> <span style={{ opacity: 0.88 }}>{comment.text}</span>
+                      </p>
+                    ))
+                  )}
+                </div>
+
+                <form onSubmit={(event) => handleAddComment(event, currentReel)} style={{ display: 'flex', gap: '12px', padding: '14px 18px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                  <input
+                    ref={commentInputRef}
+                    type="text"
+                    value={newCommentMap[currentReel.post_id] || ''}
+                    onChange={(event) => setNewCommentMap((prev) => ({ ...prev, [currentReel.post_id]: event.target.value }))}
+                    placeholder="Add a comment..."
+                    className="input-field"
+                    style={{ fontSize: '0.92rem' }}
+                  />
+                  <button type="submit" className="btn-primary" style={{ borderRadius: '10px', padding: '0 18px' }}>
+                    Post
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </motion.div>
+
+      </motion.div>
+    </AnimatePresence>
+    ,
+    document.body
   );
 };
 
@@ -158,7 +536,7 @@ const ProfilePostModal = ({ post, profile, onClose, onUpdatePost, onDeletePost, 
       console.error(err);
       setIsLiked(!nextLiked);
       setLikesCount(likesCount);
-      syncPost({ is_liked, likes_count: likesCount });
+      syncPost({ is_liked: !nextLiked, likes_count: likesCount });
     }
   };
 
@@ -748,8 +1126,9 @@ function Profile() {
   const [stats, setStats] = useState({ followers: 0, following: 0 });
   const [mediaCounts, setMediaCounts] = useState({ posts: 0, videos: 0, images: 0 });
   const [mediaItems, setMediaItems] = useState([]);
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('posts');
   const [selectedPost, setSelectedPost] = useState(null);
+  const [selectedReelId, setSelectedReelId] = useState(null);
   
   // 2FA states
   const [show2FAPanel, setShow2FAPanel] = useState(false);
@@ -774,6 +1153,7 @@ function Profile() {
 
   useEffect(() => {
     setSelectedPost(null);
+    setSelectedReelId(null);
   }, [id, activeTab]);
 
   useEffect(() => {
@@ -817,12 +1197,17 @@ function Profile() {
   };
 
   const filteredItems = mediaItems.filter((item) => {
-    if (activeTab === 'videos') return item.media_type === 'video';
-    if (activeTab === 'photos') return item.media_type !== 'video';
-    return true;
+    if (activeTab === 'reels') return item.media_type === 'video';
+    if (activeTab === 'posts') return item.media_type !== 'video';
+    return false;
   });
 
   const handleOpenPost = (item) => {
+    if (item.media_type === 'video') {
+      setSelectedReelId(item.post_id);
+      return;
+    }
+
     setSelectedPost(item);
   };
 
@@ -1265,12 +1650,20 @@ function Profile() {
         </AnimatePresence>
       </AnimatePresence>
 
-      <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '0' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+            alignItems: 'stretch',
+            marginBottom: '24px'
+          }}
+        >
           {[
-            { id: 'all', label: 'ALL', icon: Grid },
-            { id: 'photos', label: 'POSTS', icon: Grid },
-            { id: 'videos', label: 'VIDEOS', icon: Clapperboard },
+            { id: 'posts', icon: Grid, label: 'Posts' },
+            { id: 'reels', icon: PlaySquare, label: 'Reels' },
+            { id: 'saved', icon: Bookmark, label: 'Saved' },
+            { id: 'tagged', icon: Camera, label: 'Tagged' },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -1279,49 +1672,60 @@ function Profile() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={isActive ? 'btn-primary' : 'glass'}
+                title={tab.label}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   gap: '8px',
-                  padding: '8px 14px',
-                  borderRadius: '999px',
+                  height: '56px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderTop: isActive ? '1px solid rgba(255,255,255,0.95)' : '1px solid transparent',
+                  color: isActive ? 'white' : 'rgba(255,255,255,0.58)',
                   cursor: 'pointer',
-                  border: isActive ? 'none' : '1px solid var(--card-border)',
-                  color: isActive ? '#041318' : 'var(--text-primary)',
-                  background: isActive ? 'var(--accent-gradient)' : 'transparent',
-                  fontWeight: 700,
-                  letterSpacing: '0.5px',
-                  fontSize: '0.82rem'
+                  transition: 'color 0.18s ease, border-color 0.18s ease'
                 }}
               >
-                <Icon size={16} />
-                <span>{tab.label}</span>
+                <Icon size={22} strokeWidth={isActive ? 2.4 : 2} />
               </button>
             );
           })}
         </div>
 
-        <div style={{ width: '100%', height: '1px', background: 'var(--card-border)', marginBottom: '28px', opacity: 0.9 }} />
-
-        {filteredItems.length === 0 ? (
-          <div className="glass" style={{ padding: '56px 24px', textAlign: 'center', borderRadius: '24px' }}>
-            <p style={{ marginTop: 0, marginBottom: '8px', fontSize: '1.1rem' }}>
-              {isMe ? 'Share your first post or video.' : `No ${activeTab === 'videos' ? 'videos' : 'posts'} yet.`}
+        {(activeTab === 'saved' || activeTab === 'tagged') ? (
+          <div style={{ padding: '68px 24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <p style={{ margin: '0 0 8px', fontSize: '1rem', color: 'white' }}>
+              {activeTab === 'saved' ? 'Saved posts will show here.' : 'Tagged posts will show here.'}
             </p>
-            <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+            <p style={{ margin: 0 }}>
+              {isMe ? 'This tab is ready for the next step.' : 'Nothing to show in this tab yet.'}
+            </p>
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div style={{ padding: '68px 24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <p style={{ margin: '0 0 8px', fontSize: '1rem', color: 'white' }}>
+              {isMe ? `Share your first ${activeTab === 'reels' ? 'reel' : 'post'}.` : `No ${activeTab === 'reels' ? 'reels' : 'posts'} yet.`}
+            </p>
+            <p style={{ margin: 0 }}>
               {formatCount(mediaCounts.posts, 'upload')} visible on this profile.
             </p>
           </div>
         ) : (
-          <div style={{ 
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            gap: '18px',
-            width: '100%'
-          }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+              gap: activeTab === 'reels' ? '2px' : '2px',
+              width: '100%'
+            }}
+          >
             {filteredItems.map((item) => (
-              <MediaCard key={item.post_id} item={item} onOpen={handleOpenPost} />
+              activeTab === 'reels' ? (
+                <ReelCard key={item.post_id} item={item} onOpen={handleOpenPost} />
+              ) : (
+                <MediaCard key={item.post_id} item={item} onOpen={handleOpenPost} />
+              )
             ))}
           </div>
         )}
@@ -1335,6 +1739,19 @@ function Profile() {
           onUpdatePost={handleUpdatePost}
           onDeletePost={handleDeletePost}
           onRemoveFromGrid={handleRemoveFromGrid}
+        />
+      )}
+
+      {selectedReelId && (
+        <ProfileReelsModal
+          reels={mediaItems.filter((item) => item.media_type === 'video')}
+          selectedReelId={selectedReelId}
+          profile={profile}
+          isFollowing={isFollowing}
+          onClose={() => setSelectedReelId(null)}
+          onOpenProfile={(userId) => navigate(`/profile/${userId}`)}
+          onToggleFollow={handleFollow}
+          onUpdatePost={handleUpdatePost}
         />
       )}
     </div>

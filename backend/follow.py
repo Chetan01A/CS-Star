@@ -4,6 +4,7 @@ from models import Follow, User, Notification
 from deps import get_db
 from security import get_current_user
 from pydantic import BaseModel
+from notifications import create_notification
 
 router = APIRouter()
 
@@ -31,14 +32,19 @@ def follow_user(req: FollowRequest, db: Session = Depends(get_db), current_user:
 
     follow = Follow(follower_id=current_user.id, following_id=req.following_id)
     db.add(follow)
-    
-    # Notification for Follow
-    notif = Notification(
-        recipient_id=req.following_id,
-        sender_id=current_user.id,
-        type="follow"
-    )
-    db.add(notif)
+
+    existing_follow_notification = db.query(Notification).filter(
+        Notification.recipient_id == req.following_id,
+        Notification.sender_id == current_user.id,
+        Notification.type == "follow",
+    ).first()
+    if not existing_follow_notification:
+        create_notification(
+            db,
+            recipient_id=req.following_id,
+            sender_id=current_user.id,
+            type="follow",
+        )
     
     db.commit()
 
@@ -58,6 +64,11 @@ def unfollow_user(req: FollowRequest, db: Session = Depends(get_db), current_use
         return {"message": "Not following"}
 
     db.delete(follow)
+    db.query(Notification).filter(
+        Notification.recipient_id == req.following_id,
+        Notification.sender_id == current_user.id,
+        Notification.type == "follow",
+    ).delete(synchronize_session=False)
     db.commit()
 
     return {"message": "Unfollowed successfully"}

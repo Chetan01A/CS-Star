@@ -6,6 +6,22 @@ const clearAuthAndRedirect = () => {
   window.location.href = '/login';
 };
 
+const readResponseBody = async (response) => {
+  const contentType = response.headers.get('content-type') || '';
+
+  if (!contentType.includes('application/json')) {
+    const text = await response.text();
+    return text ? { detail: text } : {};
+  }
+
+  try {
+    return await response.json();
+  } catch (e) {
+    console.error('Failed to parse API response', e);
+    return {};
+  }
+};
+
 const refreshAccessToken = async () => {
   const refreshToken = localStorage.getItem('refresh_token');
   if (!refreshToken) return false;
@@ -60,7 +76,7 @@ export const api = {
       return;
     }
 
-    const data = await response.json();
+    const data = await readResponseBody(response);
     if (!response.ok) {
       throw new Error(data.detail || 'Something went wrong');
     }
@@ -112,6 +128,10 @@ export const api = {
       return;
     }
 
-    return response.json();
+    const data = await readResponseBody(response);
+    if (!response.ok) {
+      throw new Error(data.detail || 'Upload failed');
+    }
+    return data;
   }
 };

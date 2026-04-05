@@ -67,10 +67,10 @@ function Sidebar() {
   const menuItems = [
     { name: 'Home', icon: <Home size={28} strokeWidth={2.1} />, path: '/' },
     { name: 'Reels', icon: <PlaySquare size={28} strokeWidth={2.1} />, path: '/reels' },
-    { name: 'Messages', icon: <Send size={28} strokeWidth={2.1} />, path: '/messages', badge: unseenCount },
+    { name: 'Messages', icon: <Send size={28} strokeWidth={2.1} />, path: '/messages' },
     { name: 'Search', icon: <Search size={28} strokeWidth={2.1} />, path: '/search' },
     { name: 'Explore', icon: <Compass size={28} strokeWidth={2.1} />, path: '/explore' },
-    { name: 'Notifications', icon: <Heart size={28} strokeWidth={2.1} />, path: '/notifications' },
+    { name: 'Notifications', icon: <Heart size={28} strokeWidth={2.1} />, path: '/notifications', badge: unseenCount },
     { name: 'Create', icon: <Plus size={28} strokeWidth={2.1} />, path: '/create' },
     { name: 'Profile', icon: <User size={28} strokeWidth={2.1} />, path: '/profile/me' },
   ];

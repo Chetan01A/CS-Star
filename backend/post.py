@@ -7,6 +7,7 @@ import os
 from deps import get_db
 from security import get_current_user
 from pydantic import BaseModel
+from notifications import create_notification
 
 router = APIRouter()
 
@@ -150,16 +151,14 @@ def like_post(post_id: int, db: Session = Depends(get_db), current_user: User = 
 
     like = Like(user_id=current_user.id, post_id=post_id)
     db.add(like)
-    
-    # Create Notification
-    if post.user_id != current_user.id:
-        notif = Notification(
-            recipient_id=post.user_id,
-            sender_id=current_user.id,
-            type="like",
-            post_id=post_id
-        )
-        db.add(notif)
+
+    create_notification(
+        db,
+        recipient_id=post.user_id,
+        sender_id=current_user.id,
+        type="like",
+        post_id=post_id,
+    )
     
     db.commit()
     return {"message": "Post liked"}
@@ -177,6 +176,12 @@ def unlike_post(post_id: int, db: Session = Depends(get_db), current_user: User 
         return {"message": "Not liked"}
 
     db.delete(like)
+    db.query(Notification).filter(
+        Notification.recipient_id == like.post.user_id,
+        Notification.sender_id == current_user.id,
+        Notification.type == "like",
+        Notification.post_id == post_id,
+    ).delete(synchronize_session=False)
     db.commit()
     return {"message": "Post unliked"}
 
@@ -188,35 +193,38 @@ def add_comment(post_id: int, text: str, parent_id: int = None, db: Session = De
     if not post.comments_enabled:
         raise HTTPException(status_code=400, detail="Comments are turned off for this post")
 
+    parent_comment = None
+    if parent_id is not None:
+        parent_comment = db.query(Comment).filter(Comment.id == parent_id).first()
+        if not parent_comment:
+            raise HTTPException(status_code=404, detail="Parent comment not found")
+        if parent_comment.post_id != post_id:
+            raise HTTPException(status_code=400, detail="Parent comment does not belong to this post")
+
     comment = Comment(user_id=current_user.id, post_id=post_id, text=text, parent_id=parent_id)
     db.add(comment)
     db.flush() # Ensure comment.id is generated
-    
-    # Notification logic
+
     if parent_id:
-        # It's a reply
-        parent_comment = db.query(Comment).filter(Comment.id == parent_id).first()
-        if parent_comment and parent_comment.user_id != current_user.id:
-            notif = Notification(
-                recipient_id=parent_comment.user_id,
-                sender_id=current_user.id,
-                type="reply",
-                post_id=post_id,
-                comment_id=comment.id,
-                text=text
-            )
-            db.add(notif)
-    elif post.user_id != current_user.id:
-        # It's a primary comment
-        notif = Notification(
-            recipient_id=post.user_id,
+        create_notification(
+            db,
+            recipient_id=parent_comment.user_id,
             sender_id=current_user.id,
-            type="comment",
+            type="reply",
             post_id=post_id,
             comment_id=comment.id,
-            text=text
+            text=text,
         )
-        db.add(notif)
+
+    create_notification(
+        db,
+        recipient_id=post.user_id,
+        sender_id=current_user.id,
+        type="comment",
+        post_id=post_id,
+        comment_id=comment.id,
+        text=text,
+    )
 
     db.commit()
     return {"message": "Comment added", "id": comment.id}
