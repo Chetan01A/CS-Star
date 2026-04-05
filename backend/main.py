@@ -40,6 +40,25 @@ def ensure_posts_schema():
                     f"ALTER TABLE posts ADD COLUMN {column_name} {definition}"
                 )
 
+def ensure_messages_schema():
+    expected_columns = {
+        "is_read": "BOOLEAN DEFAULT 0",
+        "replied_to_id": "INTEGER",
+        "reactions": "TEXT DEFAULT '{}'",
+        "message_type": "TEXT DEFAULT 'text'",
+        "media_url": "TEXT",
+    }
+    with engine.begin() as connection:
+        existing_columns = {
+            row[1]
+            for row in connection.exec_driver_sql("PRAGMA table_info(messages)").fetchall()
+        }
+        for column_name, definition in expected_columns.items():
+            if column_name not in existing_columns:
+                connection.exec_driver_sql(
+                    f"ALTER TABLE messages ADD COLUMN {column_name} {definition}"
+                )
+
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
@@ -55,6 +74,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Create tables
 Base.metadata.create_all(bind=engine)
 ensure_posts_schema()
+ensure_messages_schema()
 
 # Routes
 app.include_router(auth_router, prefix="/auth")

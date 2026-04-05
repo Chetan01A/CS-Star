@@ -4,9 +4,13 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import Follow, Message, User
-from security import get_current_user, SECRET_KEY, ALGORITHM
-from fastapi import WebSocket, WebSocketDisconnect
 from jose import jwt, JWTError
+import json
+import os
+import uuid
+import shutil
+from fastapi import WebSocket, WebSocketDisconnect, File, UploadFile
+from security import get_current_user, SECRET_KEY, ALGORITHM
 
 router = APIRouter()
 
@@ -71,7 +75,13 @@ def get_messages(user_id: int, db: Session = Depends(get_db), current_user: User
             "from": msg.sender_id,
             "to": msg.receiver_id,
             "text": msg.text,
-            "time": msg.timestamp
+            "time": msg.timestamp,
+            "is_read": msg.is_read,
+            "replied_to_id": msg.replied_to_id,
+            "reactions": msg.reactions,
+            "message_type": msg.message_type,
+            "media_url": msg.media_url,
+            "id": msg.id
         })
 
     return {"messages": result}
@@ -113,6 +123,40 @@ def get_contacts(db: Session = Depends(get_db), current_user: User = Depends(get
 
 connections = defaultdict(set)  # user_id -> websocket connections
 
+async def broadcast_status(user_id: int, status: str):
+    msg = {"type": "status", "user_id": user_id, "status": status}
+    stale_to_remove = []
+    for uid, connections_set in connections.items():
+        if uid != user_id:
+            stale = []
+            for ws in connections_set:
+                try:
+                    await ws.send_json(msg)
+                except Exception:
+                    stale.append(ws)
+            for ws in stale:
+                connections_set.discard(ws)
+            if not connections_set:
+                stale_to_remove.append(uid)
+    for uid in stale_to_remove:
+        connections.pop(uid, None)
+
+@router.post("/upload")
+async def upload_chat_media(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    ext = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{ext}"
+    file_path = f"uploads/{unique_filename}"
+    
+    os.makedirs("uploads", exist_ok=True)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    return {"url": f"http://localhost:8000/{file_path}"}
+
 @router.websocket("/ws")
 async def websocket_chat(websocket: WebSocket, token: str = Query(...)):
     db = SessionLocal()
@@ -129,30 +173,128 @@ async def websocket_chat(websocket: WebSocket, token: str = Query(...)):
         user_id = user.id
         print(f"WebSocket connection established for user {user_id} ({user.username})")
         await websocket.accept()
+        
+        is_new_connection = user_id not in connections or len(connections[user_id]) == 0
         connections[user_id].add(websocket)
+
+        # Send initial online users to the newly connected user
+        currently_online = [uid for uid, socks in connections.items() if len(socks) > 0]
+        await websocket.send_json({"type": "init_online", "users": currently_online})
+
+        if is_new_connection:
+            await broadcast_status(user_id, "online")
 
         try:
             while True:
                 data = await websocket.receive_json()
+                msg_type = data.get("type", "chat")
+                receiver_id = data.get("to")
+                
+                if not receiver_id:
+                    continue
 
-                receiver_id = data["to"]
-                message_text = data["text"]
+                if msg_type in ("typing_start", "typing_stop"):
+                    payload = {"type": msg_type, "from": user_id, "to": receiver_id}
+                    for connection in connections.get(receiver_id, set()):
+                        try:
+                            await connection.send_json(payload)
+                        except Exception:
+                            pass
+                    continue
+                
+                if msg_type == "delete":
+                    message_id = data.get("message_id")
+                    msg = db.query(Message).filter(Message.id == message_id).first()
+                    if msg and (msg.sender_id == user_id or msg.receiver_id == user_id):
+                        db.delete(msg)
+                        db.commit()
+                        
+                        payload = {"type": "delete", "id": message_id, "to": receiver_id, "from": user_id}
+                        for target_id in {user_id, receiver_id}:
+                            for connection in connections.get(target_id, set()):
+                                try: await connection.send_json(payload)
+                                except: pass
+                    continue
+                
+                if msg_type == "reaction":
+                    message_id = data.get("message_id")
+                    emoji = data.get("emoji")
+                    msg = db.query(Message).filter(Message.id == message_id).first()
+                    if msg:
+                        # Toggle logic
+                        current_reactions = json.loads(msg.reactions or "{}")
+                        if emoji in current_reactions:
+                            if user_id in current_reactions[emoji]:
+                                current_reactions[emoji].remove(user_id)
+                                if not current_reactions[emoji]:
+                                    del current_reactions[emoji]
+                            else:
+                                current_reactions[emoji].append(user_id)
+                        else:
+                            current_reactions[emoji] = [user_id]
+                        
+                        msg.reactions = json.dumps(current_reactions)
+                        db.commit()
+                        
+                        payload = {"type": "reaction", "id": message_id, "reactions": msg.reactions, "to": receiver_id, "from": user_id}
+                        for target_id in {user_id, receiver_id}:
+                            for connection in connections.get(target_id, set()):
+                                try: await connection.send_json(payload)
+                                except: pass
+                    continue
+
+                if msg_type == "mark_read":
+                    unread_messages = db.query(Message).filter(
+                        Message.sender_id == receiver_id,
+                        Message.receiver_id == user_id,
+                        Message.is_read == False
+                    ).all()
+                    
+                    if unread_messages:
+                        for m in unread_messages:
+                            m.is_read = True
+                        db.commit()
+                        
+                        payload = {"type": "messages_read", "from": user_id, "to": receiver_id}
+                        for connection in connections.get(receiver_id, set()):
+                            try:
+                                await connection.send_json(payload)
+                            except:
+                                pass
+                    continue
+
+                message_text = data.get("text", "")
+                message_type = data.get("message_type", "text")
+                media_url = data.get("media_url")
+                
+                if not message_text and not media_url:
+                    continue
 
                 # Save message to DB
                 msg = Message(
                     sender_id=user_id,
                     receiver_id=receiver_id,
-                    text=message_text
+                    text=message_text,
+                    replied_to_id=data.get("replied_to_id"),
+                    message_type=message_type,
+                    media_url=media_url
                 )
                 db.add(msg)
                 db.commit()
                 db.refresh(msg)
 
                 payload = {
+                    "type": "chat",
                     "from": user_id,
                     "to": receiver_id,
                     "text": message_text,
                     "time": msg.timestamp.isoformat() if msg.timestamp else None,
+                    "is_read": False,
+                    "replied_to_id": msg.replied_to_id,
+                    "reactions": msg.reactions,
+                    "message_type": message_type,
+                    "media_url": media_url,
+                    "id": msg.id
                 }
 
                 for target_id in {user_id, receiver_id}:
@@ -170,14 +312,20 @@ async def websocket_chat(websocket: WebSocket, token: str = Query(...)):
 
         except WebSocketDisconnect:
             connections[user_id].discard(websocket)
-            if not connections[user_id]:
+            is_offline = not connections[user_id]
+            if is_offline:
                 connections.pop(user_id, None)
             print(f"WebSocket disconnected for user {user_id}")
+            if is_offline:
+                await broadcast_status(user_id, "offline")
         except Exception as e:
             print(f"Chat error for user {user_id}: {e}")
             connections[user_id].discard(websocket)
-            if not connections[user_id]:
+            is_offline = not connections[user_id]
+            if is_offline:
                 connections.pop(user_id, None)
+            if is_offline:
+                await broadcast_status(user_id, "offline")
 
     except Exception as e:
         print(f"WebSocket setup error: {e}")

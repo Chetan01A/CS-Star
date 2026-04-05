@@ -109,8 +109,13 @@ class Message(Base):
     id = Column(Integer, primary_key=True, index=True)
     sender_id = Column(Integer, ForeignKey("users.id"))
     receiver_id = Column(Integer, ForeignKey("users.id"))
-    text = Column(String)
+    text = Column(String, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
+    is_read = Column(Boolean, default=False)
+    replied_to_id = Column(Integer, ForeignKey("messages.id"), nullable=True)
+    reactions = Column(String, default="{}")
+    message_type = Column(String, default="text") # text, image, video, sticker, gif
+    media_url = Column(String, nullable=True)
 
 class Notification(Base):
     __tablename__ = "notifications"
