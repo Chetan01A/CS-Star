@@ -8,3 +8,4 @@ python-multipart==0.0.20
 slowapi==0.1.9
 pyotp==2.9.0
 google-auth==2.38.0
+requests==2.32.3
