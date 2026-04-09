@@ -94,7 +94,6 @@ class GoogleLoginRequest(BaseModel):
 class ResendVerificationRequest(BaseModel):
     email: str
 
-GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
 
 # Signup
 @router.post("/signup")

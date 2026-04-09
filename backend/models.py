@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 
 class User(Base):
     __tablename__ = "users"
@@ -42,7 +42,7 @@ class DeviceLogin(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     ip_address = Column(String, nullable=True)
     user_agent = Column(String, nullable=True)
-    login_time = Column(DateTime, default=datetime.utcnow)
+    login_time = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
@@ -66,7 +66,7 @@ class Post(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     image_url = Column(String)
     caption = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     hide_like_count = Column(Boolean, default=False)
     hide_share_count = Column(Boolean, default=False)
     comments_enabled = Column(Boolean, default=True)
@@ -96,7 +96,7 @@ class Comment(Base):
     post_id = Column(Integer, ForeignKey("posts.id"))
     parent_id = Column(Integer, ForeignKey("comments.id"), nullable=True)
     text = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     author = relationship("User", back_populates="comments")
     post = relationship("Post", back_populates="comments")
@@ -110,7 +110,7 @@ class Message(Base):
     sender_id = Column(Integer, ForeignKey("users.id"))
     receiver_id = Column(Integer, ForeignKey("users.id"))
     text = Column(String, nullable=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     is_read = Column(Boolean, default=False)
     replied_to_id = Column(Integer, ForeignKey("messages.id"), nullable=True)
     reactions = Column(String, default="{}")
@@ -128,7 +128,7 @@ class Notification(Base):
     comment_id = Column(Integer, ForeignKey("comments.id"), nullable=True)
     text = Column(String, nullable=True)
     is_seen = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     recipient = relationship("User", foreign_keys=[recipient_id], back_populates="notifications")
     sender = relationship("User", foreign_keys=[sender_id])

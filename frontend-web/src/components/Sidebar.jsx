@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Home, Search, Bell, Send, Plus, 
@@ -9,14 +9,44 @@ import { api } from '../api';
 
 function Sidebar() {
   const [unseenCount, setUnseenCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const navigate = useNavigate();
 
+  const fetchUnseenCount = useCallback(async () => {
+    try {
+      const notifData = await api.get('/notifications/unseen-count');
+      setUnseenCount(notifData.count || 0);
+
+      const chatData = await api.get('/chat/unread-count');
+      setUnreadMessages(chatData.count || 0);
+    } catch (err) { console.error(err); }
+  }, []);
+
   useEffect(() => {
     fetchUnseenCount();
-    const interval = setInterval(fetchUnseenCount, 30000); // Poll every 30s
-    return () => clearInterval(interval);
-  }, []);
+    const interval = setInterval(fetchUnseenCount, 15000); // Poll every 15s
+
+    // Re-fetch when window gains focus (user comes back to tab)
+    const handleFocus = () => fetchUnseenCount();
+    window.addEventListener('focus', handleFocus);
+
+    // Listen for real-time unread count changes from Messages page
+    const handleUnreadChange = (e) => {
+      if (e.detail && typeof e.detail.count === 'number') {
+        setUnreadMessages(e.detail.count);
+      } else {
+        fetchUnseenCount();
+      }
+    };
+    window.addEventListener('unread-messages-changed', handleUnreadChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('unread-messages-changed', handleUnreadChange);
+    };
+  }, [fetchUnseenCount]);
 
   useEffect(() => {
     if (!showMoreMenu) return;
@@ -28,13 +58,6 @@ function Sidebar() {
     window.addEventListener('click', handleWindowClick);
     return () => window.removeEventListener('click', handleWindowClick);
   }, [showMoreMenu]);
-
-  const fetchUnseenCount = async () => {
-    try {
-      const data = await api.get('/notifications/unseen-count');
-      setUnseenCount(data.count || 0);
-    } catch (err) { console.error(err); }
-  };
 
   const logout = () => {
     localStorage.removeItem('access_token');
@@ -67,7 +90,7 @@ function Sidebar() {
   const menuItems = [
     { name: 'Home', icon: <Home size={28} strokeWidth={2.1} />, path: '/' },
     { name: 'Reels', icon: <PlaySquare size={28} strokeWidth={2.1} />, path: '/reels' },
-    { name: 'Messages', icon: <Send size={28} strokeWidth={2.1} />, path: '/messages' },
+    { name: 'Messages', icon: <Send size={28} strokeWidth={2.1} />, path: '/messages', badge: unreadMessages },
     { name: 'Search', icon: <Search size={28} strokeWidth={2.1} />, path: '/search' },
     { name: 'Explore', icon: <Compass size={28} strokeWidth={2.1} />, path: '/explore' },
     { name: 'Notifications', icon: <Heart size={28} strokeWidth={2.1} />, path: '/notifications', badge: unseenCount },
