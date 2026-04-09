@@ -15,6 +15,7 @@ from security import get_current_user, SECRET_KEY, ALGORITHM
 from datetime import timezone, datetime
 
 router = APIRouter()
+BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "https://cs-star-1.onrender.com").rstrip("/")
 
 def get_db():
     db = SessionLocal()
@@ -352,7 +353,7 @@ async def upload_chat_media(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
-    return {"url": f"http://localhost:8000/{file_path}"}
+    return {"url": f"{BACKEND_PUBLIC_URL}/{file_path}"}
 
 @router.websocket("/ws")
 async def websocket_chat(websocket: WebSocket, token: str = Query(...)):

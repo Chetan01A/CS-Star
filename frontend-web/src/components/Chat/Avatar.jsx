@@ -1,4 +1,5 @@
 import React from 'react';
+import { buildAssetUrl } from '../../config';
 
 const Avatar = ({ user, size = 40, onlineUsers = new Set() }) => {
   const hasProfilePic = user && user.profile_pic;
@@ -8,7 +9,7 @@ const Avatar = ({ user, size = 40, onlineUsers = new Set() }) => {
     <div style={{ position: 'relative', display: 'inline-block', width: size, height: size }}>
       {hasProfilePic ? (
         <img 
-          src={user.profile_pic.startsWith('http') ? user.profile_pic : `http://localhost:8000/${user.profile_pic}`} 
+          src={buildAssetUrl(user.profile_pic)} 
           alt={user.username} 
           style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }} 
         />

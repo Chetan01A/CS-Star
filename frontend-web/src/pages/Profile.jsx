@@ -4,13 +4,12 @@ import { createPortal } from 'react-dom';
 import { api } from '../api';
 import { Edit3, Grid, ShieldCheck, ShieldAlert, UserPlus, UserMinus, Clapperboard, Heart, MessageCircle, Send, X, MoreHorizontal, Pin, BarChart3, Trash2, EyeOff, Download, MessageSquareOff, Pencil, Bookmark, CircleHelp, Expand, ThumbsUp, ThumbsDown, SlidersHorizontal, Flag, PlaySquare, Camera, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const API_BASE_URL = 'http://localhost:8000';
+import { buildAssetUrl } from '../config';
 
 const formatCount = (count, singular, plural = `${singular}s`) => `${count} ${count === 1 ? singular : plural}`;
 
 const renderProfileMedia = (item, mediaProps = {}, style = {}) => {
-  const mediaUrl = `${API_BASE_URL}/${item.image_url}`;
+  const mediaUrl = buildAssetUrl(item.image_url);
   if (item.media_type === 'video') {
     return (
       <video

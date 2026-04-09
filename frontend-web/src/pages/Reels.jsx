@@ -5,13 +5,10 @@ import { Heart, MessageCircle, Send, MoreHorizontal, Volume2, VolumeX, X, Play }
 import { motion, AnimatePresence } from 'framer-motion';
 import { isItemSaved, saveItemToCollection } from '../utils/saved';
 import SavePopover from '../components/SavePopover';
-
-const API_BASE_URL = 'http://localhost:8000';
+import { buildAssetUrl } from '../config';
 
 const toMediaUrl = (value) => {
-  if (!value) return '';
-  if (value.startsWith('http://') || value.startsWith('https://')) return value;
-  return `${API_BASE_URL}/${value}`;
+  return buildAssetUrl(value);
 };
 
 function Reels() {

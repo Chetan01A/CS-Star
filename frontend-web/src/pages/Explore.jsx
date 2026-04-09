@@ -3,8 +3,7 @@ import { api } from '../api';
 import { Heart, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-
-const API_BASE_URL = 'http://localhost:8000';
+import { buildAssetUrl } from '../config';
 
 function Explore() {
   const [posts, setPosts] = useState([]);
@@ -69,8 +68,8 @@ function Explore() {
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
-                  <img 
-                    src={`${API_BASE_URL}/${post.image_url}`} 
+                    <img
+                      src={buildAssetUrl(post.image_url)}
                     alt="Explore post"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />

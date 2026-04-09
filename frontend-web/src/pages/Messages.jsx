@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { api } from '../api';
+import { buildAssetUrl, WS_BASE_URL } from '../config';
 import { Send, User as UserIcon, MessageCircle, Search, MoreHorizontal, Phone, PhoneOff, Video, VideoOff, CornerUpLeft, Smile, MoreVertical, Check, CheckCheck, X, Image as ImageIcon, Mic, MicOff, Volume2, RefreshCcw, Gauge, AlertTriangle, Minimize2, Maximize2 } from 'lucide-react';
 /* eslint-disable react-hooks/exhaustive-deps */
 // eslint-disable-next-line no-unused-vars
@@ -837,7 +838,7 @@ function Messages() {
       socketRef.current.close();
     }
     const token = localStorage.getItem('access_token');
-    const explicitWsBase = import.meta.env.VITE_WS_URL;
+    const explicitWsBase = import.meta.env.VITE_WS_URL || WS_BASE_URL;
     const normalizedBase = explicitWsBase
       ? explicitWsBase.replace(/\/+$/, '')
       : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname || 'localhost'}:8000`;
@@ -1314,7 +1315,7 @@ function Messages() {
     return (
       <div style={{ position: 'relative', display: 'inline-block', width: size, height: size }}>
         {hasProfilePic ? (
-          <img src={user.profile_pic.startsWith('http') ? user.profile_pic : `http://localhost:8000/${user.profile_pic}`} alt={user.username} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }} />
+          <img src={buildAssetUrl(user.profile_pic)} alt={user.username} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }} />
         ) : (
           <div style={{ width: size, height: size, borderRadius: '50%', background: 'var(--accent-gradient)', display: 'grid', placeItems: 'center', color: '#021214', fontWeight: 700, fontSize: size * 0.45 }}>{user?.username?.[0]?.toUpperCase() || 'U'}</div>
         )}

@@ -19,6 +19,7 @@ app = FastAPI()
 
 UPLOADS_DIR = "uploads"
 os.makedirs(UPLOADS_DIR, exist_ok=True)
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://cs-star.vercel.app").rstrip("/")
 
 
 def ensure_posts_schema():
@@ -66,7 +67,7 @@ def ensure_messages_schema():
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development; you can restrict this to ["http://localhost:5173"] later
+    allow_origins=[FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

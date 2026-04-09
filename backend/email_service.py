@@ -1,4 +1,5 @@
 import smtplib
+import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -7,10 +8,10 @@ SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 SMTP_USERNAME = "your-app-email@gmail.com"
 SMTP_PASSWORD = "your-app-password"
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://cs-star.vercel.app").rstrip("/")
 
 def send_reset_email(to_email: str, token: str):
-    # In a real app, this would be your frontend URL (e.g. React/Next.js app)
-    reset_link = f"http://localhost:3000/reset-password?token={token}"
+    reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
     
     msg = MIMEMultipart()
     msg['From'] = SMTP_USERNAME

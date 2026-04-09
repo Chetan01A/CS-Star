@@ -3,6 +3,7 @@ import { api } from '../api';
 import { Heart, MessageSquare, UserPlus, BellOff, Reply } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { buildAssetUrl } from '../config';
 
 function Notifications() {
   const [notifications, setNotifications] = useState([]);
@@ -105,7 +106,7 @@ function Notifications() {
                     }}>
                       {n.sender_profile_pic ? (
                         <img
-                          src={`http://localhost:8000/${n.sender_profile_pic}`}
+                          src={buildAssetUrl(n.sender_profile_pic)}
                           alt={n.sender_username || 'User'}
                           style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                         />
@@ -141,7 +142,7 @@ function Notifications() {
 
                   {n.post_image && (
                     <img 
-                      src={`http://localhost:8000/${n.post_image}`} 
+                      src={buildAssetUrl(n.post_image)} 
                       alt="post"
                       style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', opacity: 0.8 }}
                     />
