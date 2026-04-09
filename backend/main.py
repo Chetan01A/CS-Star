@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -15,6 +16,9 @@ from chat import router as chat_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+UPLOADS_DIR = "uploads"
+os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 
 def ensure_posts_schema():
@@ -88,6 +92,6 @@ app.include_router(follow_router, prefix="/follow")
 app.include_router(post_router, prefix="/post")
 app.include_router(notification_router, prefix="/notifications")
 
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 app.include_router(chat_router, prefix="/chat")
