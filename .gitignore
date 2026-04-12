@@ -60,3 +60,7 @@ Thumbs.db
 backend/uploads/
 frontend-web/dist/
 mobile-app/.expo/
+
+# Environment variables
+.env
+backend/.env

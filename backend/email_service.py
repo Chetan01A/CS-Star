@@ -3,11 +3,10 @@ import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# TODO: For a production app, these should go in a .env file
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-SMTP_USERNAME = "your-app-email@gmail.com"
-SMTP_PASSWORD = "your-app-password"
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://cs-star.vercel.app").rstrip("/")
 
 def send_reset_email(to_email: str, token: str):
@@ -27,18 +26,16 @@ def send_reset_email(to_email: str, token: str):
     msg.attach(MIMEText(body, 'html'))
     
     try:
-        # Development override: just print to console to prove it works
-        print(f"\n[EMAIL MOCK] Email would be sent to {to_email}")
-        print(f"[EMAIL MOCK] Content Reset Link: {reset_link}\n")
-        
-        # When you have real credentials, uncomment the following lines to actually send the email:
-        '''
+        if not SMTP_USERNAME or not SMTP_PASSWORD:
+            print(f"\n[EMAIL MOCK] Email would be sent to {to_email}")
+            print(f"[EMAIL MOCK] Content Reset Link: {reset_link}\n")
+            return True
+            
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(SMTP_USERNAME, SMTP_PASSWORD)
         server.send_message(msg)
         server.quit()
-        '''
         return True
     except Exception as e:
         print(f"Failed to send email: {e}")
@@ -58,9 +55,16 @@ def send_verification_email(to_email: str, code: str):
     msg.attach(MIMEText(body, 'html'))
     
     try:
-        # Development override:
-        print(f"\n[EMAIL MOCK] Verification Email to {to_email}")
-        print(f"[EMAIL MOCK] Your 6-digit code is: {code}\n")
+        if not SMTP_USERNAME or not SMTP_PASSWORD:
+            print(f"\n[EMAIL MOCK] Verification Email to {to_email}")
+            print(f"[EMAIL MOCK] Your 6-digit code is: {code}\n")
+            return True
+            
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
         return True
     except Exception as e:
         print(f"Failed to send email: {e}")
