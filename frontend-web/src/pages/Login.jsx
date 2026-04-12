@@ -4,7 +4,6 @@ import { api } from '../api';
 import { LogIn, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GoogleLogin } from '@react-oauth/google';
-import ReCAPTCHA from 'react-google-recaptcha';
 
 function Login({ onSwitch }) {
   const [identifier, setIdentifier] = useState('');
@@ -12,19 +11,16 @@ function Login({ onSwitch }) {
   const [showPassword, setShowPassword] = useState(false);
   const [totpCode, setTotpCode] = useState('');
   const [show2FA, setShow2FA] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const recaptchaRef = useRef();
 
   const canSubmit = useMemo(() => {
     const hasIdentity = identifier.trim().length > 0;
     const hasPassword = password.length > 0;
-    const hasCaptcha = Boolean(captchaToken) || show2FA;
     const hasTotp = !show2FA || /^\d{6}$/.test(totpCode.trim());
-    return hasIdentity && hasPassword && hasCaptcha && hasTotp && !loading;
-  }, [identifier, password, captchaToken, show2FA, totpCode, loading]);
+    return hasIdentity && hasPassword && hasTotp && !loading;
+  }, [identifier, password, show2FA, totpCode, loading]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -38,7 +34,6 @@ function Login({ onSwitch }) {
         identifier: identifier.trim(),
         password,
         totp_code: totpCode.trim() || null,
-        captcha_token: captchaToken,
       });
 
       localStorage.setItem('access_token', data.access_token);
@@ -51,8 +46,6 @@ function Login({ onSwitch }) {
         setError('2FA is enabled on your account. Enter the 6-digit code to continue.');
       } else {
         setError(message);
-        recaptchaRef.current?.reset();
-        setCaptchaToken(null);
       }
     } finally {
       setLoading(false);
@@ -146,17 +139,6 @@ function Login({ onSwitch }) {
           </Link>
         </div>
 
-        <div className="captcha-wrap">
-          <ReCAPTCHA
-            ref={recaptchaRef}
-            sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-            onChange={(token) => {
-              setCaptchaToken(token);
-              if (error) setError('');
-            }}
-            theme="dark"
-          />
-        </div>
 
         {error && <p className="error-text">{error}</p>}
 

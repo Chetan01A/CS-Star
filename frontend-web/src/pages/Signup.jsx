@@ -4,7 +4,6 @@ import { api } from '../api';
 import { UserPlus, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GoogleLogin } from '@react-oauth/google';
-import ReCAPTCHA from 'react-google-recaptcha';
 
 function getPasswordStrength(pass) {
   let score = 0;
@@ -26,11 +25,9 @@ function Signup({ onSwitch }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const recaptchaRef = useRef();
 
   const strength = useMemo(() => getPasswordStrength(password), [password]);
   const strengthLabel = useMemo(() => getStrengthLabel(strength), [strength]);
@@ -39,8 +36,8 @@ function Signup({ onSwitch }) {
     const trimmedUsername = username.trim();
     const trimmedEmail = email.trim();
     const isEmailLike = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
-    return trimmedUsername.length >= 3 && isEmailLike && password.length >= 8 && Boolean(captchaToken) && !loading;
-  }, [username, email, password, captchaToken, loading]);
+    return trimmedUsername.length >= 3 && isEmailLike && password.length >= 8 && !loading;
+  }, [username, email, password, loading]);
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -54,15 +51,12 @@ function Signup({ onSwitch }) {
         username: username.trim(),
         email: email.trim(),
         password,
-        captcha_token: captchaToken,
       });
 
       localStorage.setItem('signup_email', email.trim());
       navigate('/verify-email');
     } catch (err) {
       setError(err?.message || 'Unable to create account. Please try again.');
-      recaptchaRef.current?.reset();
-      setCaptchaToken(null);
     } finally {
       setLoading(false);
     }
@@ -161,17 +155,6 @@ function Signup({ onSwitch }) {
           </div>
         )}
 
-        <div className="captcha-wrap">
-          <ReCAPTCHA
-            ref={recaptchaRef}
-            sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-            onChange={(token) => {
-              setCaptchaToken(token);
-              if (error) setError('');
-            }}
-            theme="dark"
-          />
-        </div>
 
         {error && <p className="error-text">{error}</p>}
 

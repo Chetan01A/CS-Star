@@ -99,9 +99,6 @@ class ResendVerificationRequest(BaseModel):
 @router.post("/signup")
 @limiter.limit("5/minute")
 def signup(req: SignupRequest, request: Request, db: Session = Depends(get_db)):
-    if not verify_captcha(req.captcha_token):
-        raise HTTPException(status_code=400, detail="CAPTCHA verification failed")
-
     hashed_password = get_password_hash(req.password)
 
     # Check if email exists
@@ -127,9 +124,6 @@ def signup(req: SignupRequest, request: Request, db: Session = Depends(get_db)):
 @router.post("/login")
 @limiter.limit("10/minute")
 def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
-    if not verify_captcha(req.captcha_token):
-        raise HTTPException(status_code=400, detail="CAPTCHA verification failed")
-
     # Look up the user by email OR username
     user = db.query(User).filter(
         or_(User.email == req.identifier, User.username == req.identifier)
