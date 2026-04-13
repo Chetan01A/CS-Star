@@ -14,7 +14,7 @@ def get_smtp_config():
         "PORT": int(os.getenv("SMTP_PORT", 587)),
         "USERNAME": os.getenv("SMTP_USERNAME", ""),
         "PASSWORD": os.getenv("SMTP_PASSWORD", ""),
-        "FRONTEND_URL": os.getenv("FRONTEND_URL", "https://cs-star.vercel.app").rstrip("/")
+        "FRONTEND_URL": os.getenv("FRONTEND_URL", "https://cs-star.onrender.com").rstrip("/")
     }
 
 def send_reset_email(to_email: str, token: str):
@@ -40,8 +40,15 @@ def send_reset_email(to_email: str, token: str):
             print(f"[EMAIL MOCK] Content Reset Link: {reset_link}\n")
             return True
             
-        server = smtplib.SMTP(config['SERVER'], config['PORT'])
-        server.starttls()
+        print(f"Attempting to send reset email to {to_email} via {config['SERVER']}...")
+        if config['PORT'] == 465:
+            # SSL Method for Render
+            server = smtplib.SMTP_SSL(config['SERVER'], config['PORT'], timeout=10)
+        else:
+            # STARTTLS Method for Local/Other
+            server = smtplib.SMTP(config['SERVER'], config['PORT'], timeout=10)
+            server.starttls()
+        
         server.login(config['USERNAME'], config['PASSWORD'])
         server.send_message(msg)
         server.quit()
@@ -73,9 +80,16 @@ def send_verification_email(to_email: str, code: str):
             print("[EMAIL MOCK] (Reason: SMTP_USERNAME or SMTP_PASSWORD not set in .env)\n")
             return True
             
-        print(f"Attempting to send verification email to {to_email} via {config['SERVER']}...")
-        server = smtplib.SMTP(config['SERVER'], config['PORT'], timeout=10)
-        server.starttls()
+        print(f"Attempting to send verification email to {to_email} via {config['SERVER']} (Port {config['PORT']})...")
+        
+        if config['PORT'] == 465:
+            # SSL Method for Render/Cloud
+            server = smtplib.SMTP_SSL(config['SERVER'], config['PORT'], timeout=10)
+        else:
+            # STARTTLS Method for Local development
+            server = smtplib.SMTP(config['SERVER'], config['PORT'], timeout=10)
+            server.starttls()
+
         server.login(config['USERNAME'], config['PASSWORD'])
         server.send_message(msg)
         server.quit()
