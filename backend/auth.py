@@ -1,9 +1,10 @@
 import os
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 import secrets
 import pyotp
+import time
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer
@@ -14,7 +15,7 @@ from google.auth.transport import requests as google_requests
 import urllib.request
 import urllib.parse
 import json
-from models import User, PasswordResetToken, DeviceLogin, RefreshToken
+from models import User, PasswordResetToken, DeviceLogin, RefreshToken, PendingSignup
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -28,8 +29,6 @@ from security import (
     ALGORITHM,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
-
-load_dotenv()
 
 router = APIRouter()
 
@@ -94,36 +93,56 @@ class GoogleLoginRequest(BaseModel):
 class ResendVerificationRequest(BaseModel):
     email: str
 
-
 # Signup
 @router.post("/signup")
 @limiter.limit("5/minute")
-def signup(req: SignupRequest, request: Request, db: Session = Depends(get_db)):
+def signup(req: SignupRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    start_time = time.time()
+    print(f"DEBUG: Starting signup for {req.email}")
     hashed_password = get_password_hash(req.password)
+    print(f"DEBUG: Password hashed in {time.time() - start_time:.4f}s")
 
-    # Check if email exists
+    # Check if email exists in main User table
     existing_user = db.query(User).filter(User.email == req.email).first()
     if existing_user:
+        print(f"DEBUG: Signup blocked - {req.email} already exists in main User table.")
         raise HTTPException(status_code=400, detail="Email already registered")
-
-    verification_code = "{:06d}".format(secrets.randbelow(1_000_000))
-    user = User(
-        username=req.username, 
-        email=req.email, 
-        password=hashed_password,
-        verification_code=verification_code
-    )
-    db.add(user)
-    db.commit()
     
-    send_verification_email(user.email, verification_code)
+    # Check if there is already a pending signup for this email
+    pending = db.query(PendingSignup).filter(PendingSignup.email == req.email).first()
+    verification_code = "{:06d}".format(secrets.randbelow(1_000_000))
+    
+    if pending:
+        print(f"DEBUG: Updating existing PendingSignup for {req.email}")
+        pending.username = req.username
+        pending.password_hash = hashed_password
+        pending.verification_code = verification_code
+        db.commit()
+    else:
+        print(f"DEBUG: Creating new PendingSignup for {req.email}")
+        new_pending = PendingSignup(
+            username=req.username,
+            email=req.email,
+            password_hash=hashed_password,
+            verification_code=verification_code
+        )
+        db.add(new_pending)
+        db.commit()
 
-    return {"message": "User created. Please check your email for the verification code."}
+    print(f"DEBUG: PendingSignup processed in {time.time() - start_time:.4f}s")
+    
+    # Send email in background
+    background_tasks.add_task(send_verification_email, req.email, verification_code)
+    print(f"DEBUG: Email task added to background. Total route time: {time.time() - start_time:.4f}s")
+
+    return {"message": "Verification code sent. Please check your email to complete registration.", "email_status": "background"}
 
 # Login
 @router.post("/login")
 @limiter.limit("10/minute")
 def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    start_time = time.time()
+    print(f"DEBUG: Starting login attempt for {req.identifier}")
     # Look up the user by email OR username
     user = db.query(User).filter(
         or_(User.email == req.identifier, User.username == req.identifier)
@@ -170,6 +189,7 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     )
     db.add(device_login)
     db.commit()
+    print(f"DEBUG: Login successful in {time.time() - start_time:.4f}s")
 
     return {
         "access_token": access_token, 
@@ -183,34 +203,29 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
 @limiter.limit("5/minute")
 def login_with_google(req: GoogleLoginRequest, request: Request, db: Session = Depends(get_db)):
     try:
-        # Validate Google Token securely
         idinfo = id_token.verify_oauth2_token(req.token, google_requests.Request(), GOOGLE_CLIENT_ID)
         email = idinfo['email']
         google_id = idinfo['sub']
         
-        # Find user by email or google ID
         user = db.query(User).filter(or_(User.email == email, User.google_id == google_id)).first()
         
         if not user:
-            # Auto-provision a new user!
             base_username = email.split("@")[0]
             user = User(
                 username=base_username, 
                 email=email, 
                 password=None,
                 google_id=google_id,
-                is_verified=True # Google verifies emails automatically
+                is_verified=True
             )
             db.add(user)
             db.commit()
             db.refresh(user)
 
-        # Link google_id if they log in via Google for the first time
         if not user.google_id:
             user.google_id = google_id
             db.commit()
 
-        # Mint our own token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(data={"sub": str(user.id)}, expires_delta=access_token_expires)
 
@@ -243,18 +258,16 @@ def login_with_google(req: GoogleLoginRequest, request: Request, db: Session = D
 # Forgot Password
 @router.post("/forgot-password")
 @limiter.limit("5/minute")
-def forgot_password(req: ForgotPasswordRequest, request: Request, db: Session = Depends(get_db)):
+def forgot_password(req: ForgotPasswordRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == req.email).first()
     
-    # We do not return 404 here to prevent hackers from knowing which emails exist.
     if user:
         token = secrets.token_hex(32)
         reset_token = PasswordResetToken(user_id=user.id, token=token)
         db.add(reset_token)
         db.commit()
         
-        # Send the actual email
-        send_reset_email(user.email, token)
+        background_tasks.add_task(send_reset_email, user.email, token)
 
     return {"message": "If that email is registered, a reset link has been sent."}
 
@@ -272,7 +285,7 @@ def reset_password(req: ResetPasswordRequest, request: Request, db: Session = De
         raise HTTPException(status_code=400, detail="User not found")
         
     user.password = get_password_hash(req.new_password)
-    db.delete(reset_token) # Delete the token so it can only be used once
+    db.delete(reset_token)
     db.commit()
     
     return {"message": "Password reset successfully"}
@@ -281,42 +294,45 @@ def reset_password(req: ResetPasswordRequest, request: Request, db: Session = De
 @router.post("/verify-email")
 @limiter.limit("5/minute")
 def verify_email(req: VerifyEmailRequest, request: Request, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == req.email).first()
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid request")
+    pending = db.query(PendingSignup).filter(PendingSignup.email == req.email).first()
+    if not pending:
+        print(f"DEBUG: Verification failed - no pending signup found for {req.email}")
+        raise HTTPException(status_code=400, detail="Invalid request or verification expired")
         
-    if user.is_verified:
-        return {"message": "Email already verified"}
-        
-    if user.verification_code != req.code:
+    if pending.verification_code != req.code:
+        print(f"DEBUG: Verification failed - incorrect code for {req.email}")
         raise HTTPException(status_code=400, detail="Invalid verification code")
         
-    user.is_verified = True
-    user.verification_code = None
+    new_user = User(
+        username=pending.username,
+        email=pending.email,
+        password=pending.password_hash,
+        is_verified=True
+    )
+    db.add(new_user)
+    db.delete(pending)
     db.commit()
     
+    print(f"DEBUG: User {req.email} successfully verified and moved to main table.")
     return {"message": "Email successfully verified. You can now log in."}
 
 # Resend Verification Code
 @router.post("/resend-verification")
 @limiter.limit("3/minute")
-def resend_verification(req: ResendVerificationRequest, request: Request, db: Session = Depends(get_db)):
+def resend_verification(req: ResendVerificationRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == req.email).first()
-    
-    if not user:
-        # Avoid user enumeration, but since this is for verification, 
-        # we might want to be slightly more helpful or stay silent.
+    if user:
+        return {"message": "Email already verified. Please log in."}
+
+    pending = db.query(PendingSignup).filter(PendingSignup.email == req.email).first()
+    if not pending:
         return {"message": "If that email is registered and not yet verified, a new code has been sent."}
         
-    if user.is_verified:
-        return {"message": "Email already verified. Please log in."}
-        
-    # Generate new code
     verification_code = "{:06d}".format(secrets.randbelow(1_000_000))
-    user.verification_code = verification_code
+    pending.verification_code = verification_code
     db.commit()
     
-    send_verification_email(user.email, verification_code)
+    background_tasks.add_task(send_verification_email, pending.email, verification_code)
     
     return {"message": "A new verification code has been sent."}
 
@@ -338,7 +354,6 @@ def setup_2fa(request: Request, db: Session = Depends(get_db), current_user: Use
     current_user.totp_secret = secret
     db.commit()
     
-    # URI for Google Authenticator / Authy
     uri = pyotp.totp.TOTP(secret).provisioning_uri(
         name=current_user.email,
         issuer_name="CS-Star App"
@@ -367,7 +382,6 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 def _as_utc_aware(value: datetime) -> datetime:
-    # SQLite often returns naive datetimes; treat them as UTC for token expiry checks.
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)
@@ -381,7 +395,10 @@ def refresh_token(req: RefreshTokenRequest, request: Request, db: Session = Depe
     if not db_token:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
         
-    if _as_utc_aware(db_token.expires_at) < datetime.now(timezone.utc):
+    token_expiry = _as_utc_aware(db_token.expires_at)
+    now_utc = datetime.now(timezone.utc)
+        
+    if token_expiry < now_utc:
         db.delete(db_token)
         db.commit()
         raise HTTPException(status_code=401, detail="Refresh token expired, please log in again")
@@ -390,7 +407,6 @@ def refresh_token(req: RefreshTokenRequest, request: Request, db: Session = Depe
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
         
-    # Generate new access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     new_access_token = create_access_token(
         data={"sub": str(user.id)}, expires_delta=access_token_expires

@@ -1,4 +1,9 @@
 import os
+from dotenv import load_dotenv
+
+# Load environment variables at the very beginning
+load_dotenv()
+
 from fastapi import FastAPI
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -76,25 +81,36 @@ app.add_middleware(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Create tables
-Base.metadata.create_all(bind=engine)
-ensure_posts_schema()
-ensure_messages_schema()
-
 # Routes
-app.include_router(auth_router, prefix="/auth")
+try:
+    print("DEBUG: Creating database tables...")
+    Base.metadata.create_all(bind=engine)
+    print("DEBUG: Checking posts schema...")
+    ensure_posts_schema()
+    print("DEBUG: Checking messages schema...")
+    ensure_messages_schema()
+    print("DEBUG: Schema setup complete.")
+except Exception as e:
+    print(f"CRITICAL: Database/Schema initialization failed: {e}")
+    import traceback
+    traceback.print_exc()
+
+try:
+    print("DEBUG: Including routers...")
+    app.include_router(auth_router, prefix="/auth")
+    app.include_router(profile_router, prefix="/profile")
+    app.include_router(follow_router, prefix="/follow")
+    app.include_router(post_router, prefix="/post")
+    app.include_router(notification_router, prefix="/notifications")
+    app.include_router(chat_router, prefix="/chat")
+    print("DEBUG: All routers included successfully.")
+except Exception as e:
+    print(f"CRITICAL: Failed to include routers: {e}")
+    import traceback
+    traceback.print_exc()
 
 @app.get("/")
 def home():
     return {"message": "API running"}
 
-app.include_router(profile_router, prefix="/profile")
-app.include_router(follow_router, prefix="/follow")
-app.include_router(post_router, prefix="/post")
-app.include_router(notification_router, prefix="/notifications")
-
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
-
-app.include_router(chat_router, prefix="/chat")
-
-

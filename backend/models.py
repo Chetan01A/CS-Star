@@ -28,6 +28,16 @@ class User(Base):
     comments = relationship("Comment", back_populates="author")
     notifications = relationship("Notification", foreign_keys="Notification.recipient_id", back_populates="recipient")
 
+class PendingSignup(Base):
+    __tablename__ = "pending_signups"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String)
+    email = Column(String, unique=True, index=True)
+    password_hash = Column(String)
+    verification_code = Column(String)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
     
