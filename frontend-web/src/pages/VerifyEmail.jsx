@@ -8,6 +8,7 @@ function VerifyEmail() {
   const [code, setCode] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -58,7 +59,7 @@ function VerifyEmail() {
           return prev - 1;
         });
       }, 1000);
-      alert('A new code has been sent. Check your terminal logs!');
+      setSuccess('A new verification code has been sent to your email.');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -90,6 +91,7 @@ function VerifyEmail() {
           />
 
           {error && <p className="error-text">{error}</p>}
+          {success && <p style={{ color: 'var(--accent-color)', marginBottom: '24px' }}>{success}</p>}
 
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Verifying...' : 'Complete Registration'}

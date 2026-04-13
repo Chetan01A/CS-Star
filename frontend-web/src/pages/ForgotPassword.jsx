@@ -65,9 +65,6 @@ function ForgotPassword() {
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <p style={{ color: 'var(--accent-color)', marginBottom: '24px' }}>{message}</p>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              Check your terminal logs for the mock email link in development!
-            </p>
           </motion.div>
         )}
 
