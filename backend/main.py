@@ -11,7 +11,7 @@ from limiter import limiter
 from database import Base, engine
 import models
 from auth import router as auth_router
-from profile import router as profile_router
+from user_profile import router as profile_router
 from follow import router as follow_router
 from post import router as post_router
 from notifications import router as notification_router
