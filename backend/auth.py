@@ -96,7 +96,7 @@ class ResendVerificationRequest(BaseModel):
 # Signup
 @router.post("/signup")
 @limiter.limit("5/minute")
-def signup(req: SignupRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def signup(req: SignupRequest, request: Request, db: Session = Depends(get_db)):
     start_time = time.time()
     print(f"DEBUG: Starting signup for {req.email}")
     hashed_password = get_password_hash(req.password)
@@ -108,34 +108,48 @@ def signup(req: SignupRequest, request: Request, background_tasks: BackgroundTas
         print(f"DEBUG: Signup blocked - {req.email} already exists in main User table.")
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    # Check if there is already a pending signup for this email
+    # Check if a pending signup exists for this email and delete it if so
     pending = db.query(PendingSignup).filter(PendingSignup.email == req.email).first()
-    verification_code = "{:06d}".format(secrets.randbelow(1_000_000))
-    
     if pending:
-        print(f"DEBUG: Updating existing PendingSignup for {req.email}")
-        pending.username = req.username
-        pending.password_hash = hashed_password
-        pending.verification_code = verification_code
-        db.commit()
-    else:
-        print(f"DEBUG: Creating new PendingSignup for {req.email}")
-        new_pending = PendingSignup(
-            username=req.username,
-            email=req.email,
-            password_hash=hashed_password,
-            verification_code=verification_code
-        )
-        db.add(new_pending)
-        db.commit()
-
-    print(f"DEBUG: PendingSignup processed in {time.time() - start_time:.4f}s")
+        db.delete(pending)
     
-    # Send email in background
-    background_tasks.add_task(send_verification_email, req.email, verification_code)
-    print(f"DEBUG: Email task added to background. Total route time: {time.time() - start_time:.4f}s")
+    # Create new user directly (Verified by default)
+    new_user = User(
+        username=req.username,
+        email=req.email,
+        password=hashed_password,
+        is_verified=True
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
 
-    return {"message": "Verification code sent. Please check your email to complete registration.", "email_status": "background"}
+    print(f"DEBUG: User created in {time.time() - start_time:.4f}s")
+    
+    # Generate JWT Token for Auto-Login
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": str(new_user.id)}, expires_delta=access_token_expires
+    )
+
+    # Generate Refresh Token
+    refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    refresh_token_str = secrets.token_hex(64)
+    db_refresh_token = RefreshToken(
+        user_id=new_user.id,
+        token=refresh_token_str,
+        expires_at=datetime.now(timezone.utc) + refresh_token_expires
+    )
+    db.add(db_refresh_token)
+    db.commit()
+
+    return {
+        "access_token": access_token, 
+        "refresh_token": refresh_token_str,
+        "token_type": "bearer", 
+        "message": "Signup successful. Welcome!",
+        "user_id": new_user.id
+    }
 
 # Login
 @router.post("/login")
@@ -150,9 +164,6 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
-        
-    if not user.is_verified:
-        raise HTTPException(status_code=403, detail="Email not verified. Please verify your email first.")
 
     if not verify_password(req.password, user.password):
         raise HTTPException(status_code=400, detail="Wrong password")
@@ -290,51 +301,15 @@ def reset_password(req: ResetPasswordRequest, request: Request, db: Session = De
     
     return {"message": "Password reset successfully"}
 
-# Verify Email
+# Verify Email (DEPRECATED)
 @router.post("/verify-email")
-@limiter.limit("5/minute")
 def verify_email(req: VerifyEmailRequest, request: Request, db: Session = Depends(get_db)):
-    pending = db.query(PendingSignup).filter(PendingSignup.email == req.email).first()
-    if not pending:
-        print(f"DEBUG: Verification failed - no pending signup found for {req.email}")
-        raise HTTPException(status_code=400, detail="Invalid request or verification expired")
-        
-    if pending.verification_code != req.code:
-        print(f"DEBUG: Verification failed - incorrect code for {req.email}")
-        raise HTTPException(status_code=400, detail="Invalid verification code")
-        
-    new_user = User(
-        username=pending.username,
-        email=pending.email,
-        password=pending.password_hash,
-        is_verified=True
-    )
-    db.add(new_user)
-    db.delete(pending)
-    db.commit()
-    
-    print(f"DEBUG: User {req.email} successfully verified and moved to main table.")
-    return {"message": "Email successfully verified. You can now log in."}
+    return {"message": "Email verification is no longer required."}
 
-# Resend Verification Code
+# Resend Verification Code (DEPRECATED)
 @router.post("/resend-verification")
-@limiter.limit("3/minute")
-def resend_verification(req: ResendVerificationRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == req.email).first()
-    if user:
-        return {"message": "Email already verified. Please log in."}
-
-    pending = db.query(PendingSignup).filter(PendingSignup.email == req.email).first()
-    if not pending:
-        return {"message": "If that email is registered and not yet verified, a new code has been sent."}
-        
-    verification_code = "{:06d}".format(secrets.randbelow(1_000_000))
-    pending.verification_code = verification_code
-    db.commit()
-    
-    background_tasks.add_task(send_verification_email, pending.email, verification_code)
-    
-    return {"message": "A new verification code has been sent."}
+def resend_verification(req: ResendVerificationRequest, request: Request, db: Session = Depends(get_db)):
+    return {"message": "Email verification is no longer required."}
 
 class TwoFactorSetupResponse(BaseModel):
     secret: str

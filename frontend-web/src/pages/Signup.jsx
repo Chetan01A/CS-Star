@@ -47,14 +47,15 @@ function Signup({ onSwitch }) {
     setError('');
 
     try {
-      await api.post('/auth/signup', {
+      const data = await api.post('/auth/signup', {
         username: username.trim(),
         email: email.trim(),
         password,
       });
 
-      localStorage.setItem('signup_email', email.trim());
-      navigate('/verify-email');
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      navigate('/');
     } catch (err) {
       setError(err?.message || 'Unable to create account. Please try again.');
     } finally {
