@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { api } from '../api';
 import { Edit3, Grid, ShieldCheck, ShieldAlert, UserPlus, UserMinus, Clapperboard, Heart, MessageCircle, Send, X, MoreHorizontal, Pin, BarChart3, Trash2, EyeOff, Download, MessageSquareOff, Pencil, Bookmark, CircleHelp, Expand, ThumbsUp, ThumbsDown, SlidersHorizontal, Flag, PlaySquare, Camera, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { buildAssetUrl } from '../config';
+import { buildAssetUrl, API_BASE_URL } from '../config';
 
 const formatCount = (count, singular, plural = `${singular}s`) => `${count} ${count === 1 ? singular : plural}`;
 
@@ -1370,9 +1370,9 @@ function Profile() {
             }}
           >
             {profile.profile_pic ? (
-              <img src={`${API_BASE_URL}/${profile.profile_pic}`} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={`${buildAssetUrl(profile.profile_pic)}?t=${Date.now()}`} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              profile.username[0].toUpperCase()
+              profile.username?.[0]?.toUpperCase() || '?'
             )}
           </motion.div>
 
@@ -1560,9 +1560,9 @@ function Profile() {
               <div style={{ padding: '26px 24px 12px' }}>
                 <div style={{ width: '96px', height: '96px', borderRadius: '50%', overflow: 'hidden', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '2.2rem', fontWeight: 700 }}>
                   {profile.profile_pic ? (
-                    <img src={`${API_BASE_URL}/${profile.profile_pic}`} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={`${buildAssetUrl(profile.profile_pic)}?t=${Date.now()}`} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    profile.username[0].toUpperCase()
+                    profile.username?.[0]?.toUpperCase() || '?'
                   )}
                 </div>
                 <h3 style={{ margin: '0 0 8px' }}>Synced profile photo</h3>

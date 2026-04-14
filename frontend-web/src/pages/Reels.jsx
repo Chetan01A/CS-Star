@@ -5,7 +5,7 @@ import { Heart, MessageCircle, Send, MoreHorizontal, Volume2, VolumeX, X, Play }
 import { motion, AnimatePresence } from 'framer-motion';
 import { isItemSaved, saveItemToCollection } from '../utils/saved';
 import SavePopover from '../components/SavePopover';
-import { buildAssetUrl } from '../config';
+import { buildAssetUrl, API_BASE_URL } from '../config';
 
 const toMediaUrl = (value) => {
   return buildAssetUrl(value);

@@ -3,6 +3,7 @@ import { api } from '../api';
 import { Search as SearchIcon, UserPlus, UserMinus, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { buildAssetUrl } from '../config';
 
 function Search() {
   const [query, setQuery] = useState('');
@@ -122,9 +123,9 @@ function Search() {
                 fontWeight: '700'
               }}>
                 {u.profile_pic ? (
-                  <img src={u.profile_pic} alt={u.username} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                  <img src={buildAssetUrl(u.profile_pic)} alt={u.username} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
                 ) : (
-                  u.username[0].toUpperCase()
+                  u.username?.[0]?.toUpperCase() || '?'
                 )}
               </div>
 
