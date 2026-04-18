@@ -695,12 +695,12 @@ function Settings() {
   }
 
   return (
-    <div style={{ padding: '24px 28px', minHeight: '100vh' }}>
+    <div className="settings-shell" style={{ padding: '24px 28px', height: '100vh', overflow: 'hidden' }}>
       <Toast message={toast.message} visible={toast.visible} />
 
-      <div className="glass" style={{ display: 'grid', gridTemplateColumns: '320px minmax(0, 1fr)', minHeight: 'calc(100vh - 48px)', overflow: 'hidden' }}>
+      <div className="glass settings-layout" style={{ display: 'grid', gridTemplateColumns: '320px minmax(0, 1fr)', height: 'calc(100vh - 48px)', overflow: 'hidden' }}>
         {/* ─── SIDEBAR ─── */}
-        <div style={{ borderRight: '1px solid var(--card-border)', padding: '26px 18px', overflowY: 'auto' }}>
+        <div className="settings-sidebar-scroll" style={{ borderRight: '1px solid var(--card-border)', padding: '26px 18px', overflowY: 'auto', minHeight: 0 }}>
           <h2 style={{ margin: '0 0 26px', fontSize: '1.4rem' }}>Settings</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {groups.map((group) => (
@@ -733,7 +733,7 @@ function Settings() {
         </div>
 
         {/* ─── CONTENT PANELS ─── */}
-        <div style={{ padding: '28px 34px', overflowY: 'auto' }}>
+        <div className="settings-content-scroll" style={{ padding: '28px 34px', overflowY: 'auto', minHeight: 0 }}>
 
           {/* ══════ EDIT PROFILE ══════ */}
           {activeSection === 'edit-profile' && (
