@@ -18,6 +18,9 @@ import {
   Check,
   Loader2,
   X,
+  Lock,
+  Shield,
+  AlertTriangle,
 } from 'lucide-react';
 
 const settingsSections = [
@@ -71,12 +74,99 @@ const Toast = ({ message, visible }) => (
   </div>
 );
 
+/* ─── Privacy confirmation modal ─── */
+const PrivacyConfirmModal = ({ visible, onConfirm, onCancel, saving }) => {
+  if (!visible) return null;
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 10000,
+        background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+      onClick={onCancel}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#262626', borderRadius: '20px', width: '100%', maxWidth: '460px',
+          overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,.6)',
+          animation: 'modalIn 0.25s ease-out',
+        }}
+      >
+        {/* Header */}
+        <div style={{ padding: '28px 28px 20px', textAlign: 'center' }}>
+          <h3 style={{ margin: '0 0 24px', fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>
+            Switch to private account?
+          </h3>
+
+          {/* Info bullets */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', textAlign: 'left' }}>
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div style={{ minWidth: '32px', height: '32px', borderRadius: '50%', border: '2px solid #555', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Lock size={15} color="#fff" />
+              </div>
+              <p style={{ margin: 0, fontSize: '0.92rem', color: '#e0e0e0', lineHeight: 1.5 }}>
+                Only your followers will be able to see your photos and videos.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div style={{ minWidth: '32px', height: '32px', borderRadius: '50%', border: '2px solid #555', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Shield size={15} color="#fff" />
+              </div>
+              <p style={{ margin: 0, fontSize: '0.92rem', color: '#e0e0e0', lineHeight: 1.5 }}>
+                This won't change who can message, tag or @mention you, but you won't be able to tag people who don't follow you.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div style={{ minWidth: '32px', height: '32px', borderRadius: '50%', border: '2px solid #555', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AlertTriangle size={15} color="#0095f6" />
+              </div>
+              <p style={{ margin: 0, fontSize: '0.92rem', color: '#0095f6', lineHeight: 1.5 }}>
+                No one can reuse your content. All reels, posts and stories that previously used your content in features like remixes, sequences, templates or stickers will be deleted. If you switch back to a public account within 24 hours, they will be restored.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{ borderTop: '1px solid #363636' }}>
+          <button
+            onClick={onConfirm}
+            disabled={saving}
+            style={{
+              width: '100%', padding: '16px', border: 'none', background: 'transparent',
+              color: '#0095f6', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
+              borderBottom: '1px solid #363636', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+            }}
+          >
+            {saving ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : null}
+            Switch to private
+          </button>
+          <button
+            onClick={onCancel}
+            style={{
+              width: '100%', padding: '16px', border: 'none', background: 'transparent',
+              color: '#fff', fontSize: '0.95rem', fontWeight: 500, cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function Settings() {
   const [activeSection, setActiveSection] = useState('edit-profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '' });
   const fileInputRef = useRef(null);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   // ─── Settings state (mirrors backend) ───
   const [settings, setSettings] = useState({
@@ -393,12 +483,61 @@ function Settings() {
           {activeSection === 'privacy' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
               <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Account privacy</h3>
-              <ToggleCard
-                title="Private account"
-                description="Only approved followers can see your posts and videos."
-                enabled={settings.account_private}
-                onToggle={() => toggleSetting('account_private')}
+
+              <div className="glass" style={{ padding: '18px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+                <div>
+                  <p style={{ margin: '0 0 6px', fontWeight: 700 }}>Private account</p>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem' }}>Only approved followers can see your posts and videos.</p>
+                </div>
+                {/* Toggle switch styled like Instagram */}
+                <button
+                  onClick={() => {
+                    if (!settings.account_private) {
+                      setShowPrivacyModal(true);
+                    } else {
+                      toggleSetting('account_private');
+                    }
+                  }}
+                  style={{
+                    width: '50px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                    background: settings.account_private ? '#0095f6' : '#555',
+                    position: 'relative', transition: 'background 0.25s ease', padding: 0,
+                  }}
+                >
+                  <div style={{
+                    width: '22px', height: '22px', borderRadius: '50%', background: '#fff',
+                    position: 'absolute', top: '3px',
+                    left: settings.account_private ? '25px' : '3px',
+                    transition: 'left 0.25s ease',
+                    boxShadow: '0 1px 3px rgba(0,0,0,.3)',
+                  }} />
+                </button>
+              </div>
+
+              {settings.account_private && (
+                <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                    When your account is private, only people you approve can see your photos and videos on CS-Star. Your existing followers won't be affected.
+                  </p>
+                </div>
+              )}
+
+              {!settings.account_private && (
+                <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                    When your account is public, your profile and posts can be seen by anyone, on or off CS-Star, even if they don't have a CS-Star account. Certain info on your profile, like your name and profile photo, is visible to everyone.
+                  </p>
+                </div>
+              )}
+
+              <PrivacyConfirmModal
+                visible={showPrivacyModal}
                 saving={saving}
+                onConfirm={async () => {
+                  await toggleSetting('account_private');
+                  setShowPrivacyModal(false);
+                }}
+                onCancel={() => setShowPrivacyModal(false)}
               />
             </div>
           )}
@@ -592,7 +731,10 @@ function Settings() {
       </div>
 
       {/* Spinner keyframes */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+      `}</style>
     </div>
   );
 }
