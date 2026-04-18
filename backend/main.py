@@ -17,6 +17,7 @@ from post import router as post_router
 from notifications import router as notification_router
 from fastapi.staticfiles import StaticFiles
 from chat import router as chat_router
+from settings import router as settings_router
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -69,6 +70,22 @@ def ensure_messages_schema():
                     f"ALTER TABLE messages ADD COLUMN {column_name} {definition}"
                 )
 
+def ensure_users_schema():
+    expected_columns = {
+        "website": "TEXT DEFAULT ''",
+        "gender": "TEXT DEFAULT 'Prefer not to say'",
+    }
+    with engine.begin() as connection:
+        existing_columns = {
+            row[1]
+            for row in connection.exec_driver_sql("PRAGMA table_info(users)").fetchall()
+        }
+        for column_name, definition in expected_columns.items():
+            if column_name not in existing_columns:
+                connection.exec_driver_sql(
+                    f"ALTER TABLE users ADD COLUMN {column_name} {definition}"
+                )
+
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
@@ -89,6 +106,8 @@ try:
     ensure_posts_schema()
     print("DEBUG: Checking messages schema...")
     ensure_messages_schema()
+    print("DEBUG: Checking users schema...")
+    ensure_users_schema()
     print("DEBUG: Schema setup complete.")
 except Exception as e:
     print(f"CRITICAL: Database/Schema initialization failed: {e}")
@@ -103,6 +122,7 @@ try:
     app.include_router(post_router, prefix="/post")
     app.include_router(notification_router, prefix="/notifications")
     app.include_router(chat_router, prefix="/chat")
+    app.include_router(settings_router, prefix="/settings")
     print("DEBUG: All routers included successfully.")
 except Exception as e:
     print(f"CRITICAL: Failed to include routers: {e}")

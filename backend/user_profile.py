@@ -25,13 +25,17 @@ def get_profile(user_id: int, db: Session = Depends(get_db), current_user: User 
         "username": user.username,
         "email": user.email,
         "bio": user.bio,
-        "profile_pic": user.profile_pic
+        "profile_pic": user.profile_pic,
+        "website": user.website or "",
+        "gender": user.gender or "Prefer not to say"
     }
 
 class ProfileUpdateRequest(BaseModel):
     username: str = ""
     bio: str = ""
     profile_pic: str = ""
+    website: str = ""
+    gender: str = "Prefer not to say"
 
 # Update profile
 @router.put("/{user_id}")
@@ -48,6 +52,8 @@ def update_profile(user_id: int, req: ProfileUpdateRequest, db: Session = Depend
         user.username = req.username.strip()
     user.bio = req.bio
     user.profile_pic = req.profile_pic
+    user.website = req.website
+    user.gender = req.gender
 
     db.commit()
 
@@ -58,7 +64,9 @@ def update_profile(user_id: int, req: ProfileUpdateRequest, db: Session = Depend
             "username": user.username,
             "email": user.email,
             "bio": user.bio,
-            "profile_pic": user.profile_pic
+            "profile_pic": user.profile_pic,
+            "website": user.website or "",
+            "gender": user.gender or "Prefer not to say"
         }
     }
 

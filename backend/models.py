@@ -15,6 +15,8 @@ class User(Base):
     # NEW PROFILE FIELDS
     bio = Column(String, default="")
     profile_pic = Column(String, default="")
+    website = Column(String, default="")
+    gender = Column(String, default="Prefer not to say")
 
     # 2FA FIELDS
     totp_secret = Column(String, nullable=True)
@@ -27,6 +29,7 @@ class User(Base):
     posts = relationship("Post", back_populates="author")
     comments = relationship("Comment", back_populates="author")
     notifications = relationship("Notification", foreign_keys="Notification.recipient_id", back_populates="recipient")
+    settings = relationship("UserSettings", uselist=False, back_populates="user", cascade="all, delete-orphan")
 
 class PendingSignup(Base):
     __tablename__ = "pending_signups"
@@ -144,3 +147,32 @@ class Notification(Base):
     sender = relationship("User", foreign_keys=[sender_id])
     post = relationship("Post")
     comment = relationship("Comment")
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    show_threads_badge = Column(Boolean, default=True)
+    show_profile_suggestions = Column(Boolean, default=True)
+    push_notifications = Column(Boolean, default=True)
+    account_private = Column(Boolean, default=False)
+    close_friends_enabled = Column(Boolean, default=False)
+    story_location_sharing = Column(Boolean, default=False)
+    message_replies = Column(Boolean, default=True)
+    tags_mentions = Column(Boolean, default=True)
+    sharing_reuse = Column(Boolean, default=True)
+    restricted_accounts = Column(Boolean, default=False)
+    hidden_words = Column(Boolean, default=True)
+    muted_accounts = Column(Boolean, default=False)
+    autoplay_reels = Column(Boolean, default=True)
+    appearance_mode = Column(String, default="dark")
+
+    user = relationship("User", back_populates="settings")
+
+class BlockedUser(Base):
+    __tablename__ = "blocked_users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    blocker_id = Column(Integer, ForeignKey("users.id"))
+    blocked_id = Column(Integer, ForeignKey("users.id"))
