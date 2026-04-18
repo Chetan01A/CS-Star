@@ -89,6 +89,11 @@ def ensure_users_schema():
 def ensure_user_settings_schema():
     expected_columns = {
         "hidden_story_live_from": "TEXT DEFAULT '[]'",
+        "message_controls": "BOOLEAN DEFAULT 1",
+        "message_request_audience": "TEXT DEFAULT 'everyone'",
+        "group_invite_audience": "TEXT DEFAULT 'everyone'",
+        "story_reply_audience": "TEXT DEFAULT 'everyone'",
+        "show_activity_status": "BOOLEAN DEFAULT 1",
     }
     with engine.begin() as connection:
         existing_columns = {

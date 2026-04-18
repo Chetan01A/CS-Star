@@ -94,6 +94,111 @@ const SettingsNavCard = ({ title, description, onClick, value }) => (
   </button>
 );
 
+const RadioOption = ({ label, selected, onClick, disabled }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      width: '100%',
+      background: 'transparent',
+      border: 'none',
+      color: 'white',
+      textAlign: 'left',
+      cursor: disabled ? 'default' : 'pointer',
+      padding: '6px 0',
+      opacity: disabled ? 0.7 : 1,
+    }}
+  >
+    <span
+      style={{
+        width: '22px',
+        height: '22px',
+        borderRadius: '50%',
+        border: '1.8px solid rgba(255,255,255,0.9)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      {selected ? (
+        <span
+          style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            background: '#fff',
+            display: 'block',
+          }}
+        />
+      ) : null}
+    </span>
+    <span style={{ fontSize: '1rem', fontWeight: 500 }}>{label}</span>
+  </button>
+);
+
+const RadioCard = ({ options, selectedValue, onSelect, disabled }) => (
+  <div
+    className="glass"
+    style={{
+      borderRadius: '22px',
+      overflow: 'hidden',
+      border: '1px solid var(--card-border)',
+    }}
+  >
+    {options.map((option, index) => (
+      <button
+        key={option.value}
+        onClick={() => onSelect(option.value)}
+        disabled={disabled}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          background: 'transparent',
+          border: 'none',
+          color: 'white',
+          padding: '16px 18px',
+          cursor: disabled ? 'default' : 'pointer',
+          opacity: disabled ? 0.7 : 1,
+          borderBottom: index === options.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)',
+        }}
+      >
+        <span style={{ fontSize: '1rem', fontWeight: 500, textAlign: 'left' }}>{option.label}</span>
+        <span
+          style={{
+            width: '20px',
+            height: '20px',
+            borderRadius: '50%',
+            border: '1.8px solid rgba(255,255,255,0.9)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          {selectedValue === option.value ? (
+            <span
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                background: '#fff',
+                display: 'block',
+              }}
+            />
+          ) : null}
+        </span>
+      </button>
+    ))}
+  </div>
+);
+
 /* ─── Toast notification ─── */
 const Toast = ({ message, visible }) => (
   <div
@@ -203,6 +308,7 @@ function Settings() {
   const fileInputRef = useRef(null);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [storyLocationView, setStoryLocationView] = useState('menu');
+  const [messagesView, setMessagesView] = useState('menu');
   const [storyAudience, setStoryAudience] = useState([]);
   const [storyAudienceLoading, setStoryAudienceLoading] = useState(false);
   const [storySearch, setStorySearch] = useState('');
@@ -219,7 +325,12 @@ function Settings() {
     close_friends_enabled: false,
     story_location_sharing: false,
     hidden_story_live_from: [],
+    message_controls: true,
+    message_request_audience: 'everyone',
+    group_invite_audience: 'everyone',
     message_replies: true,
+    story_reply_audience: 'everyone',
+    show_activity_status: true,
     tags_mentions: true,
     sharing_reuse: true,
     restricted_accounts: false,
@@ -306,6 +417,12 @@ function Settings() {
     loadStoryAudience();
   }, [activeSection, userId]);
 
+  useEffect(() => {
+    if (activeSection !== 'messages') {
+      setMessagesView('menu');
+    }
+  }, [activeSection]);
+
   // ─── Persist a single field change ───
   const updateSetting = async (key, value) => {
     const prev = settings[key];
@@ -332,6 +449,20 @@ function Settings() {
       : [...currentList, targetUserId];
 
     await updateSetting('hidden_story_live_from', nextList);
+  };
+
+  const setStoryReplyAudience = async (audience) => {
+    await updateSetting('story_reply_audience', audience);
+    await updateSetting('message_replies', audience !== 'off');
+  };
+
+  const setMessageRequestAudience = async (audience) => {
+    await updateSetting('message_request_audience', audience);
+    await updateSetting('message_controls', audience !== 'no-one');
+  };
+
+  const setGroupInviteAudience = async (audience) => {
+    await updateSetting('group_invite_audience', audience);
   };
 
   // ─── Save profile (bio, website, gender) ───
@@ -824,14 +955,267 @@ function Settings() {
           {/* ══════ MESSAGES & STORY REPLIES ══════ */}
           {activeSection === 'messages' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Messages and replies</h3>
-              <ToggleCard
-                title="Story replies and messages"
-                description="Choose who can reply to your stories and send direct messages."
-                enabled={settings.message_replies}
-                onToggle={() => toggleSetting('message_replies')}
-                saving={saving}
-              />
+              {messagesView === 'menu' ? (
+                <>
+                  <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Messages and story replies</h3>
+
+                  <p style={{ margin: '10px 0 6px', fontSize: '1.45rem', fontWeight: 800 }}>
+                    How people can reach you
+                  </p>
+
+                  <div className="glass" style={{ borderRadius: '22px', overflow: 'hidden', padding: '8px 0' }}>
+                    <button
+                      onClick={() => setMessagesView('message-controls')}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '16px',
+                        padding: '16px 18px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'white',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '1rem',
+                      }}
+                    >
+                      <span>Message controls</span>
+                      <ChevronRight size={18} color="var(--text-secondary)" />
+                    </button>
+
+                    <button
+                      onClick={() => setMessagesView('story-replies')}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '16px',
+                        padding: '16px 18px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'white',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '1rem',
+                      }}
+                    >
+                      <span>Story replies</span>
+                      <ChevronRight size={18} color="var(--text-secondary)" />
+                    </button>
+                  </div>
+
+                  <p style={{ margin: '34px 0 6px', fontSize: '1.45rem', fontWeight: 800 }}>
+                    Who can see you're online
+                  </p>
+
+                  <div className="glass" style={{ borderRadius: '22px', overflow: 'hidden', padding: '8px 0' }}>
+                    <button
+                      onClick={() => setMessagesView('activity-status')}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '16px',
+                        padding: '16px 18px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'white',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '1rem',
+                      }}
+                    >
+                      <span>Show activity status</span>
+                      <ChevronRight size={18} color="var(--text-secondary)" />
+                    </button>
+                  </div>
+                </>
+              ) : messagesView === 'message-controls' ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button
+                      onClick={() => setMessagesView('menu')}
+                      style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Message requests</h3>
+                  </div>
+
+                  <div style={{ maxWidth: '640px', display: 'flex', flexDirection: 'column', gap: '34px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                        When someone who you don't follow or haven't chatted with before sends you a message, you receive it as a message request.
+                      </p>
+                      <button
+                        type="button"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#6ea8ff',
+                          padding: 0,
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: '0.95rem',
+                        }}
+                      >
+                        Learn more about who can message you
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <p style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>
+                          Who can send you message requests
+                        </p>
+                        <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                          People you follow or have chatted with before can always send you messages unless you block them.
+                        </p>
+                      </div>
+
+                      <RadioCard
+                        options={[
+                          { label: 'Everyone', value: 'everyone' },
+                          { label: 'Your followers', value: 'followers' },
+                          { label: 'No one', value: 'no-one' },
+                        ]}
+                        selectedValue={settings.message_request_audience}
+                        onSelect={setMessageRequestAudience}
+                        disabled={saving}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <p style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>
+                          Who can add you to group chats
+                        </p>
+                        <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                          People you've blocked cannot add you to group chats.
+                        </p>
+                      </div>
+
+                      <RadioCard
+                        options={[
+                          { label: 'Everyone', value: 'everyone' },
+                          { label: 'People you follow or have messaged before', value: 'following-or-chatted' },
+                        ]}
+                        selectedValue={settings.group_invite_audience}
+                        onSelect={setGroupInviteAudience}
+                        disabled={saving}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : messagesView === 'story-replies' ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button
+                      onClick={() => setMessagesView('menu')}
+                      style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Story replies</h3>
+                  </div>
+
+                  <div style={{ maxWidth: '640px' }}>
+                    <div
+                      style={{
+                        background: '#050505',
+                        borderRadius: '4px',
+                        padding: '16px 18px',
+                        marginBottom: '12px',
+                      }}
+                    >
+                      <p style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>
+                        Who can reply to your stories
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <RadioOption
+                        label="Everyone"
+                        selected={settings.story_reply_audience === 'everyone'}
+                        onClick={() => setStoryReplyAudience('everyone')}
+                        disabled={saving}
+                      />
+                      <RadioOption
+                        label="People You Follow"
+                        selected={settings.story_reply_audience === 'following'}
+                        onClick={() => setStoryReplyAudience('following')}
+                        disabled={saving}
+                      />
+                      <RadioOption
+                        label="Off"
+                        selected={settings.story_reply_audience === 'off'}
+                        onClick={() => setStoryReplyAudience('off')}
+                        disabled={saving}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button
+                      onClick={() => setMessagesView('menu')}
+                      style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Show activity status</h3>
+                  </div>
+
+                  <div style={{ maxWidth: '760px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
+                      <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>Show activity status</p>
+                      <button
+                        onClick={() => toggleSetting('show_activity_status')}
+                        disabled={saving}
+                        style={{
+                          width: '42px',
+                          height: '24px',
+                          borderRadius: '999px',
+                          border: 'none',
+                          cursor: saving ? 'default' : 'pointer',
+                          background: settings.show_activity_status ? '#ffffff' : '#6b7280',
+                          position: 'relative',
+                          transition: 'background 0.2s ease',
+                          padding: 0,
+                          opacity: saving ? 0.7 : 1,
+                        }}
+                      >
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: '2px',
+                            left: settings.show_activity_status ? '20px' : '2px',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            background: '#0f141a',
+                            transition: 'left 0.2s ease',
+                          }}
+                        />
+                      </button>
+                    </div>
+
+                    <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: '760px' }}>
+                      Allow accounts you follow and anyone you message to see when you were last active or are currently active on CS-Star. When this is turned off, you won't be able to see the activity status of other accounts.
+                      <span style={{ color: '#6ea8ff' }}> Learn more</span>
+                    </p>
+
+                    <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      You can continue to use our services if activity status is off.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

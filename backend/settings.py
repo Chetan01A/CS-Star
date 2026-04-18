@@ -42,7 +42,12 @@ def settings_to_dict(settings: UserSettings, user: User) -> dict:
         "close_friends_enabled": settings.close_friends_enabled,
         "story_location_sharing": settings.story_location_sharing,
         "hidden_story_live_from": hidden_story_live_from,
+        "message_controls": settings.message_controls,
+        "message_request_audience": settings.message_request_audience or "everyone",
+        "group_invite_audience": settings.group_invite_audience or "everyone",
         "message_replies": settings.message_replies,
+        "story_reply_audience": settings.story_reply_audience or "everyone",
+        "show_activity_status": settings.show_activity_status,
         "tags_mentions": settings.tags_mentions,
         "sharing_reuse": settings.sharing_reuse,
         "restricted_accounts": settings.restricted_accounts,
@@ -67,7 +72,12 @@ class SettingsUpdate(BaseModel):
     close_friends_enabled: Optional[bool] = None
     story_location_sharing: Optional[bool] = None
     hidden_story_live_from: Optional[List[int]] = None
+    message_controls: Optional[bool] = None
+    message_request_audience: Optional[str] = None
+    group_invite_audience: Optional[str] = None
     message_replies: Optional[bool] = None
+    story_reply_audience: Optional[str] = None
+    show_activity_status: Optional[bool] = None
     tags_mentions: Optional[bool] = None
     sharing_reuse: Optional[bool] = None
     restricted_accounts: Optional[bool] = None
@@ -108,7 +118,7 @@ def update_settings(
     toggle_fields = [
         "show_threads_badge", "show_profile_suggestions", "push_notifications",
         "account_private", "close_friends_enabled", "story_location_sharing",
-        "message_replies", "tags_mentions", "sharing_reuse",
+        "message_controls", "message_request_audience", "group_invite_audience", "message_replies", "story_reply_audience", "show_activity_status", "tags_mentions", "sharing_reuse",
         "restricted_accounts", "hidden_words", "muted_accounts",
         "autoplay_reels", "appearance_mode",
     ]
