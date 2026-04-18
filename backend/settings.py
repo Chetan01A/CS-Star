@@ -49,6 +49,9 @@ def settings_to_dict(settings: UserSettings, user: User) -> dict:
         "story_reply_audience": settings.story_reply_audience or "everyone",
         "show_activity_status": settings.show_activity_status,
         "tags_mentions": settings.tags_mentions,
+        "tag_audience": settings.tag_audience or "everyone",
+        "mention_audience": settings.mention_audience or "everyone",
+        "manual_tag_approval": settings.manual_tag_approval,
         "sharing_reuse": settings.sharing_reuse,
         "restricted_accounts": settings.restricted_accounts,
         "hidden_words": settings.hidden_words,
@@ -79,6 +82,9 @@ class SettingsUpdate(BaseModel):
     story_reply_audience: Optional[str] = None
     show_activity_status: Optional[bool] = None
     tags_mentions: Optional[bool] = None
+    tag_audience: Optional[str] = None
+    mention_audience: Optional[str] = None
+    manual_tag_approval: Optional[bool] = None
     sharing_reuse: Optional[bool] = None
     restricted_accounts: Optional[bool] = None
     hidden_words: Optional[bool] = None
@@ -119,6 +125,7 @@ def update_settings(
         "show_threads_badge", "show_profile_suggestions", "push_notifications",
         "account_private", "close_friends_enabled", "story_location_sharing",
         "message_controls", "message_request_audience", "group_invite_audience", "message_replies", "story_reply_audience", "show_activity_status", "tags_mentions", "sharing_reuse",
+        "tag_audience", "mention_audience", "manual_tag_approval",
         "restricted_accounts", "hidden_words", "muted_accounts",
         "autoplay_reels", "appearance_mode",
     ]

@@ -94,6 +94,9 @@ def ensure_user_settings_schema():
         "group_invite_audience": "TEXT DEFAULT 'everyone'",
         "story_reply_audience": "TEXT DEFAULT 'everyone'",
         "show_activity_status": "BOOLEAN DEFAULT 1",
+        "tag_audience": "TEXT DEFAULT 'everyone'",
+        "mention_audience": "TEXT DEFAULT 'everyone'",
+        "manual_tag_approval": "BOOLEAN DEFAULT 0",
     }
     with engine.begin() as connection:
         existing_columns = {

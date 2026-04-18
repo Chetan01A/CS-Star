@@ -309,6 +309,7 @@ function Settings() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [storyLocationView, setStoryLocationView] = useState('menu');
   const [messagesView, setMessagesView] = useState('menu');
+  const [tagsView, setTagsView] = useState('menu');
   const [storyAudience, setStoryAudience] = useState([]);
   const [storyAudienceLoading, setStoryAudienceLoading] = useState(false);
   const [storySearch, setStorySearch] = useState('');
@@ -332,6 +333,9 @@ function Settings() {
     story_reply_audience: 'everyone',
     show_activity_status: true,
     tags_mentions: true,
+    tag_audience: 'everyone',
+    mention_audience: 'everyone',
+    manual_tag_approval: false,
     sharing_reuse: true,
     restricted_accounts: false,
     hidden_words: true,
@@ -423,6 +427,12 @@ function Settings() {
     }
   }, [activeSection]);
 
+  useEffect(() => {
+    if (activeSection !== 'tags-mentions') {
+      setTagsView('menu');
+    }
+  }, [activeSection]);
+
   // ─── Persist a single field change ───
   const updateSetting = async (key, value) => {
     const prev = settings[key];
@@ -463,6 +473,16 @@ function Settings() {
 
   const setGroupInviteAudience = async (audience) => {
     await updateSetting('group_invite_audience', audience);
+  };
+
+  const setTagAudience = async (audience) => {
+    await updateSetting('tag_audience', audience);
+    await updateSetting('tags_mentions', audience !== 'none');
+  };
+
+  const setMentionAudience = async (audience) => {
+    await updateSetting('mention_audience', audience);
+    await updateSetting('tags_mentions', audience !== 'none');
   };
 
   // ─── Save profile (bio, website, gender) ───
@@ -1222,14 +1242,126 @@ function Settings() {
           {/* ══════ TAGS & MENTIONS ══════ */}
           {activeSection === 'tags-mentions' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Tags and mentions</h3>
-              <ToggleCard
-                title="Tags and mentions controls"
-                description="Decide who can tag you and mention you in posts, captions, and comments."
-                enabled={settings.tags_mentions}
-                onToggle={() => toggleSetting('tags_mentions')}
-                saving={saving}
-              />
+              {tagsView === 'menu' ? (
+                <>
+                  <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Tags and mentions</h3>
+
+                  <div style={{ maxWidth: '760px', display: 'flex', flexDirection: 'column', gap: '34px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 500 }}>Who can tag you</p>
+                        <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                          Choose who can tag you in their photos and videos. When people try to tag you, they'll see if you don't allow tags from everyone.
+                        </p>
+                      </div>
+
+                      <RadioCard
+                        options={[
+                          { label: 'Allow tags from everyone', value: 'everyone' },
+                          { label: 'Allow tags from people you follow', value: 'following' },
+                          { label: "Don't allow tags", value: 'none' },
+                        ]}
+                        selectedValue={settings.tag_audience}
+                        onSelect={setTagAudience}
+                        disabled={saving}
+                      />
+
+                      <button
+                        onClick={() => setTagsView('manual-approval')}
+                        className="glass"
+                        style={{
+                          width: '100%',
+                          maxWidth: '760px',
+                          padding: '20px 18px',
+                          borderRadius: '22px',
+                          border: '1px solid var(--card-border)',
+                          background: 'rgba(255,255,255,0.02)',
+                          color: 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontSize: '1rem', fontWeight: 500 }}>Manually approve tags</span>
+                        <ChevronRight size={18} color="var(--text-secondary)" />
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 500 }}>Who can @mention you</p>
+                        <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                          Choose who can @mention you to link your profile in their stories, notes, comments, live videos, bio, and captions. When people try to @mention you, they'll see if you don't allow @mentions.
+                        </p>
+                      </div>
+
+                      <RadioCard
+                        options={[
+                          { label: 'Allow mentions from everyone', value: 'everyone' },
+                          { label: 'Allow mentions from people you follow', value: 'following' },
+                          { label: "Don't allow mentions", value: 'none' },
+                        ]}
+                        selectedValue={settings.mention_audience}
+                        onSelect={setMentionAudience}
+                        disabled={saving}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button
+                      onClick={() => setTagsView('menu')}
+                      style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Manually approve tags</h3>
+                  </div>
+
+                  <div style={{ maxWidth: '760px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
+                      <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>Manually approve tags</p>
+                      <button
+                        onClick={() => toggleSetting('manual_tag_approval')}
+                        disabled={saving}
+                        style={{
+                          width: '42px',
+                          height: '24px',
+                          borderRadius: '999px',
+                          border: 'none',
+                          cursor: saving ? 'default' : 'pointer',
+                          background: settings.manual_tag_approval ? '#ffffff' : '#6b7280',
+                          position: 'relative',
+                          transition: 'background 0.2s ease',
+                          padding: 0,
+                          opacity: saving ? 0.7 : 1,
+                        }}
+                      >
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: '2px',
+                            left: settings.manual_tag_approval ? '20px' : '2px',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            background: '#0f141a',
+                            transition: 'left 0.2s ease',
+                          }}
+                        />
+                      </button>
+                    </div>
+
+                    <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      When this is on, tags from other people won't appear on your profile until you approve them.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
