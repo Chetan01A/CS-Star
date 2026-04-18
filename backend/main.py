@@ -86,6 +86,21 @@ def ensure_users_schema():
                     f"ALTER TABLE users ADD COLUMN {column_name} {definition}"
                 )
 
+def ensure_user_settings_schema():
+    expected_columns = {
+        "hidden_story_live_from": "TEXT DEFAULT '[]'",
+    }
+    with engine.begin() as connection:
+        existing_columns = {
+            row[1]
+            for row in connection.exec_driver_sql("PRAGMA table_info(user_settings)").fetchall()
+        }
+        for column_name, definition in expected_columns.items():
+            if column_name not in existing_columns:
+                connection.exec_driver_sql(
+                    f"ALTER TABLE user_settings ADD COLUMN {column_name} {definition}"
+                )
+
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
@@ -108,6 +123,8 @@ try:
     ensure_messages_schema()
     print("DEBUG: Checking users schema...")
     ensure_users_schema()
+    print("DEBUG: Checking user settings schema...")
+    ensure_user_settings_schema()
     print("DEBUG: Schema setup complete.")
 except Exception as e:
     print(f"CRITICAL: Database/Schema initialization failed: {e}")

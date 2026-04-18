@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models import User, UserSettings, BlockedUser
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from deps import get_db
 from security import get_current_user
+import json
 
 router = APIRouter()
 
@@ -21,6 +22,13 @@ def get_or_create_settings(db: Session, user_id: int) -> UserSettings:
 
 
 def settings_to_dict(settings: UserSettings, user: User) -> dict:
+    try:
+        hidden_story_live_from = json.loads(settings.hidden_story_live_from or "[]")
+        if not isinstance(hidden_story_live_from, list):
+            hidden_story_live_from = []
+    except json.JSONDecodeError:
+        hidden_story_live_from = []
+
     return {
         # profile fields
         "website": user.website or "",
@@ -33,6 +41,7 @@ def settings_to_dict(settings: UserSettings, user: User) -> dict:
         "account_private": settings.account_private,
         "close_friends_enabled": settings.close_friends_enabled,
         "story_location_sharing": settings.story_location_sharing,
+        "hidden_story_live_from": hidden_story_live_from,
         "message_replies": settings.message_replies,
         "tags_mentions": settings.tags_mentions,
         "sharing_reuse": settings.sharing_reuse,
@@ -57,6 +66,7 @@ class SettingsUpdate(BaseModel):
     account_private: Optional[bool] = None
     close_friends_enabled: Optional[bool] = None
     story_location_sharing: Optional[bool] = None
+    hidden_story_live_from: Optional[List[int]] = None
     message_replies: Optional[bool] = None
     tags_mentions: Optional[bool] = None
     sharing_reuse: Optional[bool] = None
@@ -106,6 +116,11 @@ def update_settings(
         value = getattr(payload, field)
         if value is not None:
             setattr(settings, field, value)
+
+    if payload.hidden_story_live_from is not None:
+        settings.hidden_story_live_from = json.dumps([
+            int(user_id) for user_id in payload.hidden_story_live_from
+        ])
 
     db.commit()
     db.refresh(settings)

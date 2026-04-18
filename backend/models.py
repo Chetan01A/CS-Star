@@ -159,6 +159,7 @@ class UserSettings(Base):
     account_private = Column(Boolean, default=False)
     close_friends_enabled = Column(Boolean, default=False)
     story_location_sharing = Column(Boolean, default=False)
+    hidden_story_live_from = Column(String, default="[]")
     message_replies = Column(Boolean, default=True)
     tags_mentions = Column(Boolean, default=True)
     sharing_reuse = Column(Boolean, default=True)

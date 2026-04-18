@@ -21,6 +21,9 @@ import {
   Lock,
   Shield,
   AlertTriangle,
+  ChevronRight,
+  ChevronLeft,
+  Search,
 } from 'lucide-react';
 
 const settingsSections = [
@@ -57,6 +60,38 @@ const ToggleCard = ({ title, description, enabled, onToggle, actionLabel, saving
       {actionLabel || (enabled ? 'ON' : 'OFF')}
     </button>
   </div>
+);
+
+const SettingsNavCard = ({ title, description, onClick, value }) => (
+  <button
+    onClick={onClick}
+    className="glass"
+    style={{
+      padding: '18px 20px',
+      borderRadius: '20px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '16px',
+      width: '100%',
+      color: 'white',
+      cursor: 'pointer',
+      border: '1px solid var(--card-border)',
+      background: 'rgba(255,255,255,0.02)',
+      textAlign: 'left',
+    }}
+  >
+    <div>
+      <p style={{ margin: '0 0 6px', fontWeight: 700 }}>{title}</p>
+      {description ? (
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem' }}>{description}</p>
+      ) : null}
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-secondary)' }}>
+      {value ? <span style={{ fontSize: '0.9rem' }}>{value}</span> : null}
+      <ChevronRight size={18} />
+    </div>
+  </button>
 );
 
 /* ─── Toast notification ─── */
@@ -167,6 +202,10 @@ function Settings() {
   const [toast, setToast] = useState({ visible: false, message: '' });
   const fileInputRef = useRef(null);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [storyLocationView, setStoryLocationView] = useState('menu');
+  const [storyAudience, setStoryAudience] = useState([]);
+  const [storyAudienceLoading, setStoryAudienceLoading] = useState(false);
+  const [storySearch, setStorySearch] = useState('');
 
   // ─── Settings state (mirrors backend) ───
   const [settings, setSettings] = useState({
@@ -179,6 +218,7 @@ function Settings() {
     account_private: false,
     close_friends_enabled: false,
     story_location_sharing: false,
+    hidden_story_live_from: [],
     message_replies: true,
     tags_mentions: true,
     sharing_reuse: true,
@@ -242,6 +282,30 @@ function Settings() {
     }
   }, [activeSection]);
 
+  useEffect(() => {
+    if (activeSection !== 'story-location') {
+      setStoryLocationView('menu');
+      setStorySearch('');
+      return;
+    }
+
+    const loadStoryAudience = async () => {
+      if (!userId) return;
+      setStoryAudienceLoading(true);
+      try {
+        const data = await api.get(`/follow/followers/${userId}`);
+        setStoryAudience(data?.followers || []);
+      } catch (e) {
+        console.error('Failed to load followers for story settings', e);
+        setStoryAudience([]);
+      } finally {
+        setStoryAudienceLoading(false);
+      }
+    };
+
+    loadStoryAudience();
+  }, [activeSection, userId]);
+
   // ─── Persist a single field change ───
   const updateSetting = async (key, value) => {
     const prev = settings[key];
@@ -260,6 +324,15 @@ function Settings() {
   };
 
   const toggleSetting = (key) => updateSetting(key, !settings[key]);
+
+  const toggleHiddenStoryUser = async (targetUserId) => {
+    const currentList = Array.isArray(settings.hidden_story_live_from) ? settings.hidden_story_live_from : [];
+    const nextList = currentList.includes(targetUserId)
+      ? currentList.filter((id) => id !== targetUserId)
+      : [...currentList, targetUserId];
+
+    await updateSetting('hidden_story_live_from', nextList);
+  };
 
   // ─── Save profile (bio, website, gender) ───
   const saveProfile = async () => {
@@ -312,6 +385,12 @@ function Settings() {
   };
 
   const groups = Array.from(new Set(settingsSections.map((s) => s.group)));
+  const hiddenStoryIds = Array.isArray(settings.hidden_story_live_from) ? settings.hidden_story_live_from : [];
+  const filteredStoryAudience = storyAudience.filter((user) => {
+    const search = storySearch.trim().toLowerCase();
+    if (!search) return true;
+    return (user.username || '').toLowerCase().includes(search);
+  });
 
   if (loading) {
     return (
@@ -590,14 +669,155 @@ function Settings() {
           {/* ══════ STORY, LIVE & LOCATION ══════ */}
           {activeSection === 'story-location' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Story, live and location</h3>
-              <ToggleCard
-                title="Location and story sharing"
-                description="Control location sharing and who can interact with your live and story content."
-                enabled={settings.story_location_sharing}
-                onToggle={() => toggleSetting('story_location_sharing')}
-                saving={saving}
-              />
+              {storyLocationView === 'menu' ? (
+                <>
+                  <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Story, live and location</h3>
+                  <SettingsNavCard
+                    title="Hide story and live from"
+                    value={hiddenStoryIds.length ? `${hiddenStoryIds.length} selected` : ''}
+                    onClick={() => setStoryLocationView('hide-story')}
+                  />
+                  <ToggleCard
+                    title="Location sharing"
+                    description="Choose whether location details can be attached to your story activity."
+                    enabled={settings.story_location_sharing}
+                    onToggle={() => toggleSetting('story_location_sharing')}
+                    saving={saving}
+                  />
+                  <ToggleCard
+                    title="Story replies"
+                    description="Control whether people can reply to your stories and live updates."
+                    enabled={settings.message_replies}
+                    onToggle={() => toggleSetting('message_replies')}
+                    saving={saving}
+                  />
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button
+                      onClick={() => setStoryLocationView('menu')}
+                      style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Hide story from</h3>
+                  </div>
+
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: '720px' }}>
+                    Hide all photos and videos you add to your story from specific people. This also hides your live videos.
+                  </p>
+
+                  <div
+                    className="glass"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '14px 16px',
+                      borderRadius: '18px',
+                    }}
+                  >
+                    <Search size={18} color="var(--text-secondary)" />
+                    <input
+                      value={storySearch}
+                      onChange={(e) => setStorySearch(e.target.value)}
+                      placeholder="Search"
+                      style={{
+                        flex: 1,
+                        background: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        color: 'white',
+                        fontSize: '1rem',
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {storyAudienceLoading ? (
+                      <div className="glass" style={{ padding: '22px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} />
+                      </div>
+                    ) : filteredStoryAudience.length === 0 ? (
+                      <div className="glass" style={{ padding: '22px', borderRadius: '18px', color: 'var(--text-secondary)' }}>
+                        {storySearch.trim() ? 'No matching followers found.' : 'No followers available yet.'}
+                      </div>
+                    ) : (
+                      filteredStoryAudience.map((user) => {
+                        const isHidden = hiddenStoryIds.includes(user.id);
+                        return (
+                          <button
+                            key={user.id}
+                            onClick={() => toggleHiddenStoryUser(user.id)}
+                            disabled={saving}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '16px',
+                              width: '100%',
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'white',
+                              padding: '10px 2px',
+                              cursor: saving ? 'default' : 'pointer',
+                              opacity: saving ? 0.7 : 1,
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+                              {user.profile_pic ? (
+                                <img
+                                  src={buildAssetUrl(user.profile_pic)}
+                                  alt={user.username}
+                                  style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                <div
+                                  style={{
+                                    width: '48px',
+                                    height: '48px',
+                                    borderRadius: '50%',
+                                    background: 'var(--accent-gradient)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  {(user.username || 'U').slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
+                              <div style={{ minWidth: 0 }}>
+                                <p style={{ margin: '0 0 4px', fontWeight: 700 }}>{user.username}</p>
+                                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem' }}>
+                                  {isHidden ? 'Hidden from your story and live' : 'Can see your story and live'}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div
+                              style={{
+                                width: '26px',
+                                height: '26px',
+                                borderRadius: '50%',
+                                border: `2px solid ${isHidden ? '#0095f6' : 'rgba(255,255,255,0.2)'}`,
+                                background: isHidden ? '#0095f6' : 'transparent',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {isHidden ? <Check size={14} color="#fff" /> : null}
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
