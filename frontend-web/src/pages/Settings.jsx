@@ -24,6 +24,14 @@ import {
   ChevronRight,
   ChevronLeft,
   Search,
+  Archive,
+  Languages,
+  Accessibility,
+  MonitorPlay,
+  BadgeInfo,
+  CircleHelp,
+  ShieldCheck,
+  UserRoundCheck,
 } from 'lucide-react';
 
 const settingsSections = [
@@ -41,6 +49,14 @@ const settingsSections = [
   { id: 'hidden-words', label: 'Hidden words', icon: MessageCircle, group: 'How others can interact with you' },
   { id: 'muted-accounts', label: 'Muted accounts', icon: EyeOff, group: 'What you see' },
   { id: 'preferences', label: 'Content preferences', icon: Palette, group: 'What you see' },
+  { id: 'like-share-counts', label: 'Like and share counts', icon: Heart, group: 'What you see' },
+  { id: 'archiving-downloading', label: 'Archiving and downloading', icon: Archive, group: 'Your app and media' },
+  { id: 'accessibility', label: 'Accessibility', icon: Accessibility, group: 'Your app and media' },
+  { id: 'language', label: 'Language', icon: Languages, group: 'Your app and media' },
+  { id: 'website-permissions', label: 'Website permissions', icon: MonitorPlay, group: 'Your app and media' },
+  { id: 'help', label: 'Help', icon: CircleHelp, group: 'More info and support' },
+  { id: 'privacy-center', label: 'Privacy Center', icon: ShieldCheck, group: 'More info and support' },
+  { id: 'account-status', label: 'Account Status', icon: UserRoundCheck, group: 'More info and support' },
 ];
 
 /* ─── Toggle card (used in almost every panel) ─── */
@@ -1695,6 +1711,102 @@ function Settings() {
           )}
 
           {/* ══════ CONTENT PREFERENCES ══════ */}
+          {activeSection === 'like-share-counts' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Like and share counts</h3>
+              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Manage visibility</p>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Control whether like and share counts are shown across your CS-Star experience. More detailed controls can be added here next.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'archiving-downloading' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Archiving and downloading</h3>
+              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Your saved content controls</p>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Use this area to manage archived posts, downloaded media, and future backup options.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'accessibility' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Accessibility</h3>
+              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Accessibility settings</p>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Accessibility options like captions, motion preferences, and text readability can live here.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'language' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Language</h3>
+              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>App language</p>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Language selection and translation preferences can be configured here.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'website-permissions' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Website permissions</h3>
+              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Browser and site access</p>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Manage website-level permissions like camera, microphone, notifications, and embedded experiences here.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'help' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Help</h3>
+              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Support resources</p>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Find answers to common questions, report a problem, and get help with your CS-Star account here.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'privacy-center' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Privacy Center</h3>
+              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Privacy tools</p>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Review privacy information, manage personal data settings, and understand how your information is used on CS-Star.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'account-status' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Account Status</h3>
+              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Current account standing</p>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Check whether your account and content are in good standing, and review any future status updates here.
+                </p>
+              </div>
+            </div>
+          )}
+
           {activeSection === 'preferences' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
               <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Content preferences</h3>
