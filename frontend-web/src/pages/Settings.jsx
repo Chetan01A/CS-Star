@@ -199,6 +199,101 @@ const RadioCard = ({ options, selectedValue, onSelect, disabled }) => (
   </div>
 );
 
+const RadioListOption = ({ label, subtitle, selected, onClick, disabled }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '14px',
+      width: '100%',
+      background: 'transparent',
+      border: 'none',
+      color: 'white',
+      textAlign: 'left',
+      cursor: disabled ? 'default' : 'pointer',
+      padding: '4px 0',
+      opacity: disabled ? 0.7 : 1,
+    }}
+  >
+    <span
+      style={{
+        width: '22px',
+        height: '22px',
+        borderRadius: '50%',
+        border: '1.8px solid rgba(255,255,255,0.9)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        marginTop: '2px',
+      }}
+    >
+      {selected ? (
+        <span
+          style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            background: '#fff',
+            display: 'block',
+          }}
+        />
+      ) : null}
+    </span>
+    <span style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+      <span style={{ fontSize: '1rem', fontWeight: 500 }}>{label}</span>
+      {subtitle ? <span style={{ fontSize: '0.95rem', color: 'var(--text-secondary)' }}>{subtitle}</span> : null}
+    </span>
+  </button>
+);
+
+const SwitchRow = ({ label, checked, onToggle, disabled, bordered = false }) => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '20px',
+      padding: '16px 18px',
+      borderBottom: bordered ? '1px solid rgba(255,255,255,0.05)' : 'none',
+    }}
+  >
+    <p style={{ margin: 0, fontSize: '1rem', fontWeight: 500 }}>{label}</p>
+    <button
+      onClick={onToggle}
+      disabled={disabled}
+      style={{
+        width: '42px',
+        height: '24px',
+        borderRadius: '999px',
+        border: 'none',
+        cursor: disabled ? 'default' : 'pointer',
+        background: checked ? '#ffffff' : '#6b7280',
+        position: 'relative',
+        transition: 'background 0.2s ease',
+        padding: 0,
+        opacity: disabled ? 0.7 : 1,
+        flexShrink: 0,
+      }}
+    >
+      <span
+        style={{
+          position: 'absolute',
+          top: '2px',
+          left: checked ? '20px' : '2px',
+          width: '20px',
+          height: '20px',
+          borderRadius: '50%',
+          background: '#0f141a',
+          transition: 'left 0.2s ease',
+        }}
+      />
+    </button>
+  </div>
+);
+
 /* ─── Toast notification ─── */
 const Toast = ({ message, visible }) => (
   <div
@@ -310,6 +405,7 @@ function Settings() {
   const [storyLocationView, setStoryLocationView] = useState('menu');
   const [messagesView, setMessagesView] = useState('menu');
   const [tagsView, setTagsView] = useState('menu');
+  const [relationshipCounts, setRelationshipCounts] = useState({ followers: 0, following: 0 });
   const [storyAudience, setStoryAudience] = useState([]);
   const [storyAudienceLoading, setStoryAudienceLoading] = useState(false);
   const [storySearch, setStorySearch] = useState('');
@@ -336,7 +432,14 @@ function Settings() {
     tag_audience: 'everyone',
     mention_audience: 'everyone',
     manual_tag_approval: false,
+    comment_audience: 'everyone',
+    gif_comments_enabled: true,
     sharing_reuse: true,
+    story_shares_enabled: true,
+    posts_reels_to_stories_enabled: true,
+    reposts_enabled: true,
+    website_embeds_enabled: false,
+    featured_content_requests_enabled: true,
     restricted_accounts: false,
     hidden_words: true,
     muted_accounts: false,
@@ -433,6 +536,26 @@ function Settings() {
     }
   }, [activeSection]);
 
+  useEffect(() => {
+    const loadRelationshipCounts = async () => {
+      if (!userId) return;
+      try {
+        const [followersData, followingData] = await Promise.all([
+          api.get(`/follow/followers-count/${userId}`),
+          api.get(`/follow/following-count/${userId}`),
+        ]);
+        setRelationshipCounts({
+          followers: followersData?.count || 0,
+          following: followingData?.count || 0,
+        });
+      } catch (e) {
+        console.error('Failed to load relationship counts', e);
+      }
+    };
+
+    loadRelationshipCounts();
+  }, [userId]);
+
   // ─── Persist a single field change ───
   const updateSetting = async (key, value) => {
     const prev = settings[key];
@@ -483,6 +606,10 @@ function Settings() {
   const setMentionAudience = async (audience) => {
     await updateSetting('mention_audience', audience);
     await updateSetting('tags_mentions', audience !== 'none');
+  };
+
+  const setCommentAudience = async (audience) => {
+    await updateSetting('comment_audience', audience);
   };
 
   // ─── Save profile (bio, website, gender) ───
@@ -1369,11 +1496,84 @@ function Settings() {
           {activeSection === 'comments' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
               <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Comments</h3>
-              <ToggleCard
-                title="Comment controls"
-                description="Manage filters, mentions, replies, and who can comment on your posts."
-                enabled onToggle={() => {}} actionLabel="Manage"
-              />
+              <div style={{ maxWidth: '760px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Allow comments from</p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <RadioListOption
+                    label="Everyone"
+                    selected={settings.comment_audience === 'everyone'}
+                    onClick={() => setCommentAudience('everyone')}
+                    disabled={saving}
+                  />
+                  <RadioListOption
+                    label="People you follow"
+                    subtitle={`${relationshipCounts.following} People`}
+                    selected={settings.comment_audience === 'following'}
+                    onClick={() => setCommentAudience('following')}
+                    disabled={saving}
+                  />
+                  <RadioListOption
+                    label="Your followers"
+                    subtitle={`${relationshipCounts.followers} People`}
+                    selected={settings.comment_audience === 'followers'}
+                    onClick={() => setCommentAudience('followers')}
+                    disabled={saving}
+                  />
+                  <RadioListOption
+                    label="People you follow and your followers"
+                    subtitle={`${new Set([relationshipCounts.followers, relationshipCounts.following]).size === 1 ? Math.max(relationshipCounts.followers, relationshipCounts.following) : relationshipCounts.followers + relationshipCounts.following} People`}
+                    selected={settings.comment_audience === 'following-and-followers'}
+                    onClick={() => setCommentAudience('following-and-followers')}
+                    disabled={saving}
+                  />
+                  <RadioListOption
+                    label="Off"
+                    selected={settings.comment_audience === 'off'}
+                    onClick={() => setCommentAudience('off')}
+                    disabled={saving}
+                  />
+                </div>
+
+                <div style={{ height: '8px' }} />
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
+                  <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>Allow GIF comments</p>
+                  <button
+                    onClick={() => toggleSetting('gif_comments_enabled')}
+                    disabled={saving}
+                    style={{
+                      width: '42px',
+                      height: '24px',
+                      borderRadius: '999px',
+                      border: 'none',
+                      cursor: saving ? 'default' : 'pointer',
+                      background: settings.gif_comments_enabled ? '#ffffff' : '#6b7280',
+                      position: 'relative',
+                      transition: 'background 0.2s ease',
+                      padding: 0,
+                      opacity: saving ? 0.7 : 1,
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '2px',
+                        left: settings.gif_comments_enabled ? '20px' : '2px',
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        background: '#0f141a',
+                        transition: 'left 0.2s ease',
+                      }}
+                    />
+                  </button>
+                </div>
+
+                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  People will be able to comment GIFs on your posts and reels.
+                </p>
+              </div>
             </div>
           )}
 
@@ -1381,13 +1581,74 @@ function Settings() {
           {activeSection === 'sharing-reuse' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
               <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Sharing and reuse</h3>
-              <ToggleCard
-                title="Allow sharing and reuse"
-                description="Choose whether others can share your content to stories or reuse it."
-                enabled={settings.sharing_reuse}
-                onToggle={() => toggleSetting('sharing_reuse')}
-                saving={saving}
-              />
+
+              <div style={{ maxWidth: '760px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <p style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>Allow people to share your stories</p>
+                  <div className="glass" style={{ borderRadius: '22px', overflow: 'hidden', border: '1px solid var(--card-border)' }}>
+                    <SwitchRow
+                      label="Story shares"
+                      checked={settings.story_shares_enabled}
+                      onToggle={() => toggleSetting('story_shares_enabled')}
+                      disabled={saving}
+                    />
+                  </div>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                    When this is on, people can send your stories in messages.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <p style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>Allow people to share your posts and reels</p>
+                  <div className="glass" style={{ borderRadius: '22px', overflow: 'hidden', border: '1px solid var(--card-border)' }}>
+                    <SwitchRow
+                      label="Posts and reels to stories"
+                      checked={settings.posts_reels_to_stories_enabled}
+                      onToggle={() => toggleSetting('posts_reels_to_stories_enabled')}
+                      disabled={saving}
+                      bordered
+                    />
+                    <SwitchRow
+                      label="Reposts on posts and reels"
+                      checked={settings.reposts_enabled}
+                      onToggle={() => toggleSetting('reposts_enabled')}
+                      disabled={saving}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <p style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>Allow people to share externally</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <p style={{ margin: 0, fontSize: '1.05rem', fontWeight: 500 }}>Website embeds</p>
+                    <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      When this is on, your public posts or profile can be shown outside of CS-Star, including articles and blogs.
+                      <span style={{ color: '#6ea8ff' }}> Learn more</span>
+                    </p>
+                  </div>
+                  <RadioCard
+                    options={[
+                      { label: 'On', value: 'on' },
+                      { label: 'Off', value: 'off' },
+                    ]}
+                    selectedValue={settings.website_embeds_enabled ? 'on' : 'off'}
+                    onSelect={(value) => updateSetting('website_embeds_enabled', value === 'on')}
+                    disabled={saving}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <p style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>Allow businesses to interact with you</p>
+                  <div className="glass" style={{ borderRadius: '22px', overflow: 'hidden', border: '1px solid var(--card-border)' }}>
+                    <SwitchRow
+                      label="Featured content requests"
+                      checked={settings.featured_content_requests_enabled}
+                      onToggle={() => toggleSetting('featured_content_requests_enabled')}
+                      disabled={saving}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

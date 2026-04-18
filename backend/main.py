@@ -97,6 +97,13 @@ def ensure_user_settings_schema():
         "tag_audience": "TEXT DEFAULT 'everyone'",
         "mention_audience": "TEXT DEFAULT 'everyone'",
         "manual_tag_approval": "BOOLEAN DEFAULT 0",
+        "comment_audience": "TEXT DEFAULT 'everyone'",
+        "gif_comments_enabled": "BOOLEAN DEFAULT 1",
+        "story_shares_enabled": "BOOLEAN DEFAULT 1",
+        "posts_reels_to_stories_enabled": "BOOLEAN DEFAULT 1",
+        "reposts_enabled": "BOOLEAN DEFAULT 1",
+        "website_embeds_enabled": "BOOLEAN DEFAULT 0",
+        "featured_content_requests_enabled": "BOOLEAN DEFAULT 1",
     }
     with engine.begin() as connection:
         existing_columns = {

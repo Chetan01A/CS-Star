@@ -52,7 +52,14 @@ def settings_to_dict(settings: UserSettings, user: User) -> dict:
         "tag_audience": settings.tag_audience or "everyone",
         "mention_audience": settings.mention_audience or "everyone",
         "manual_tag_approval": settings.manual_tag_approval,
+        "comment_audience": settings.comment_audience or "everyone",
+        "gif_comments_enabled": settings.gif_comments_enabled,
         "sharing_reuse": settings.sharing_reuse,
+        "story_shares_enabled": settings.story_shares_enabled,
+        "posts_reels_to_stories_enabled": settings.posts_reels_to_stories_enabled,
+        "reposts_enabled": settings.reposts_enabled,
+        "website_embeds_enabled": settings.website_embeds_enabled,
+        "featured_content_requests_enabled": settings.featured_content_requests_enabled,
         "restricted_accounts": settings.restricted_accounts,
         "hidden_words": settings.hidden_words,
         "muted_accounts": settings.muted_accounts,
@@ -85,7 +92,14 @@ class SettingsUpdate(BaseModel):
     tag_audience: Optional[str] = None
     mention_audience: Optional[str] = None
     manual_tag_approval: Optional[bool] = None
+    comment_audience: Optional[str] = None
+    gif_comments_enabled: Optional[bool] = None
     sharing_reuse: Optional[bool] = None
+    story_shares_enabled: Optional[bool] = None
+    posts_reels_to_stories_enabled: Optional[bool] = None
+    reposts_enabled: Optional[bool] = None
+    website_embeds_enabled: Optional[bool] = None
+    featured_content_requests_enabled: Optional[bool] = None
     restricted_accounts: Optional[bool] = None
     hidden_words: Optional[bool] = None
     muted_accounts: Optional[bool] = None
@@ -126,6 +140,8 @@ def update_settings(
         "account_private", "close_friends_enabled", "story_location_sharing",
         "message_controls", "message_request_audience", "group_invite_audience", "message_replies", "story_reply_audience", "show_activity_status", "tags_mentions", "sharing_reuse",
         "tag_audience", "mention_audience", "manual_tag_approval",
+        "comment_audience", "gif_comments_enabled",
+        "story_shares_enabled", "posts_reels_to_stories_enabled", "reposts_enabled", "website_embeds_enabled", "featured_content_requests_enabled",
         "restricted_accounts", "hidden_words", "muted_accounts",
         "autoplay_reels", "appearance_mode",
     ]
