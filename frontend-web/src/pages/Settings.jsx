@@ -1989,38 +1989,37 @@ function Settings() {
           )}
 
           {activeSection === 'help' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('help')}</h3>
-              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>{t('Support resources')}</p>
-                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  {t('Find answers to common questions, report a problem, and get help with your CS-Star account here.')}
-                </p>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h3 style={{ margin: '0 0 6px', fontSize: '1.8rem' }}>{getSectionTitle('help')}</h3>
+              <SettingsNavCard title={t('Help Center')} description={t('Find answers to common questions.')} onClick={() => showToast(t('Opening Help Center...'))} />
+              <SettingsNavCard title={t('Report a Problem')} description={t('Let us know if something is broken.')} onClick={() => showToast(t('Opening Report Dialog...'))} />
+              <SettingsNavCard title={t('Support Requests')} description={t('View your previous reports and requests.')} onClick={() => showToast(t('Loading Requests...'))} />
             </div>
           )}
 
           {activeSection === 'privacy-center' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('privacy-center')}</h3>
-              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>{t('Privacy tools')}</p>
-                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  {t('Review privacy information, manage personal data settings, and understand how your information is used on CS-Star.')}
-                </p>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h3 style={{ margin: '0 0 6px', fontSize: '1.8rem' }}>{getSectionTitle('privacy-center')}</h3>
+              <SettingsNavCard title={t('Privacy Policy')} description={t('Learn how we collect and use your data.')} onClick={() => showToast(t('Opening Privacy Policy...'))} />
+              <SettingsNavCard title={t('Download Your Information')} description={t('Get a copy of what you have shared on CS-Star.')} onClick={() => showToast(t('Preparing download...'))} />
+              <SettingsNavCard title={t('Manage Data Permissions')} description={t('Review and manage your personal data settings.')} onClick={() => showToast(t('Loading permissions...'))} />
             </div>
           )}
 
           {activeSection === 'account-status' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('account-status')}</h3>
-              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>{t('Current account standing')}</p>
-                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  {t('Check whether your account and content are in good standing, and review any future status updates here.')}
-                </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h3 style={{ margin: '0 0 6px', fontSize: '1.8rem' }}>{getSectionTitle('account-status')}</h3>
+              <div className="glass" style={{ padding: '24px', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px', marginBottom: '8px' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(0, 200, 83, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(0, 200, 83, 0.5)' }}>
+                  <Check size={32} color="#00c853" strokeWidth={3} />
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 8px', fontSize: '1.4rem', fontWeight: 800 }}>{t('Your account is in good standing')}</p>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{t('Thank you for following our Community Guidelines. You have no restrictions on your account.')}</p>
+                </div>
               </div>
+              <SettingsNavCard title={t('Features you can access')} value={t('All')} onClick={() => showToast(t('No restricted features'))} />
+              <SettingsNavCard title={t('Monetization status')} value={t('Eligible')} onClick={() => showToast(t('Account is eligible'))} />
             </div>
           )}
 
