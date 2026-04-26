@@ -181,6 +181,9 @@ class UserSettings(Base):
     restricted_accounts = Column(Boolean, default=False)
     hidden_words = Column(Boolean, default=True)
     muted_accounts = Column(Boolean, default=False)
+    hide_like_counts = Column(Boolean, default=False)
+    hide_share_counts = Column(Boolean, default=False)
+    app_language = Column(String, default="en")
     autoplay_reels = Column(Boolean, default=True)
     appearance_mode = Column(String, default="dark")
 

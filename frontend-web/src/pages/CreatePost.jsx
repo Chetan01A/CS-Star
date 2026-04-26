@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { Image, X, Upload } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../context/LanguageContext';
 
 function CreatePost() {
   const [file, setFile] = useState(null);
@@ -11,6 +12,7 @@ function CreatePost() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -26,7 +28,7 @@ function CreatePost() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file) {
-      setError('Please select an image or video first');
+      setError(t('create.selectMediaFirst'));
       return;
     }
 
@@ -44,7 +46,7 @@ function CreatePost() {
       await api.upload(`/post/upload?caption=${encodeURIComponent(caption)}`, formData);
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Upload failed');
+      setError(err.message || t('create.uploadFailed'));
     } finally {
       setLoading(false);
     }
@@ -59,7 +61,7 @@ function CreatePost() {
         style={{ padding: '32px' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-          <h2 className="gradient-text" style={{ margin: 0 }}>Create New Post</h2>
+          <h2 className="gradient-text" style={{ margin: 0 }}>{t('create.title')}</h2>
           <X onClick={() => navigate('/')} className="cursor-pointer" />
         </div>
 
@@ -84,7 +86,7 @@ function CreatePost() {
             ) : (
               <>
                 <Image size={48} color="var(--text-secondary)" style={{ marginBottom: '16px' }} />
-                <p>Click to upload image or video</p>
+                <p>{t('create.uploadPrompt')}</p>
               </>
             )}
             <input 
@@ -97,7 +99,7 @@ function CreatePost() {
           </div>
 
           <textarea 
-            placeholder="Write a caption..." 
+            placeholder={t('create.captionPlaceholder')}
             className="input-field"
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
@@ -107,7 +109,7 @@ function CreatePost() {
           {error && <p className="error-text">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={loading || !file}>
-            {loading ? 'Sharing...' : <><Upload size={20} /> Share Media</>}
+            {loading ? t('create.sharing') : <><Upload size={20} /> {t('create.shareMedia')}</>}
           </button>
         </form>
       </motion.div>

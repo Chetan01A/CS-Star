@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { api } from '../api';
 import { buildAssetUrl, WS_BASE_URL } from '../config';
+import { useLanguage } from '../context/LanguageContext';
 import { Send, User as UserIcon, MessageCircle, Search, MoreHorizontal, Phone, PhoneOff, Video, VideoOff, CornerUpLeft, Smile, MoreVertical, Check, CheckCheck, X, Image as ImageIcon, Mic, MicOff, Volume2, RefreshCcw, Gauge, AlertTriangle, Minimize2, Maximize2 } from 'lucide-react';
 /* eslint-disable react-hooks/exhaustive-deps */
 // eslint-disable-next-line no-unused-vars
@@ -146,6 +147,7 @@ function Messages() {
   const [showStickerPicker, setShowStickerPicker] = useState(false);
   const [, setIsUploading] = useState(false);
   const [emojiSearch, setEmojiSearch] = useState('');
+  const { t } = useLanguage();
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [, setAudioChunks] = useState([]);
@@ -1480,12 +1482,12 @@ function Messages() {
         <aside style={{ borderRight: `1px solid ${theme.borderSoft}`, background: theme.panelBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '24px 20px 18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h1 style={{ margin: 0, fontSize: 26 }}>Messages</h1>
+              <h1 style={{ margin: 0, fontSize: 26 }}>{t('messages.title')}</h1>
               <button style={{ width: 38, height: 38, borderRadius: 14, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: 'pointer' }}>+</button>
             </div>
             <div style={{ marginTop: 18, borderRadius: 18, background: theme.panelSoft, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
               <Search size={16} color={theme.textMuted} />
-              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search" style={{ width: '100%', border: 'none', background: 'transparent', color: theme.text, outline: 'none' }} />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t('common.search')} style={{ width: '100%', border: 'none', background: 'transparent', color: theme.text, outline: 'none' }} />
             </div>
           </div>
           <div className="sidebarScroll" style={{ flex: 1, overflowY: 'auto', padding: '0 20px 20px' }}>

@@ -104,6 +104,9 @@ def ensure_user_settings_schema():
         "reposts_enabled": "BOOLEAN DEFAULT 1",
         "website_embeds_enabled": "BOOLEAN DEFAULT 0",
         "featured_content_requests_enabled": "BOOLEAN DEFAULT 1",
+        "hide_like_counts": "BOOLEAN DEFAULT 0",
+        "hide_share_counts": "BOOLEAN DEFAULT 0",
+        "app_language": "TEXT DEFAULT 'en'",
     }
     with engine.begin() as connection:
         existing_columns = {

@@ -63,6 +63,9 @@ def settings_to_dict(settings: UserSettings, user: User) -> dict:
         "restricted_accounts": settings.restricted_accounts,
         "hidden_words": settings.hidden_words,
         "muted_accounts": settings.muted_accounts,
+        "hide_like_counts": settings.hide_like_counts,
+        "hide_share_counts": settings.hide_share_counts,
+        "app_language": settings.app_language or "en",
         "autoplay_reels": settings.autoplay_reels,
         "appearance_mode": settings.appearance_mode,
     }
@@ -103,6 +106,9 @@ class SettingsUpdate(BaseModel):
     restricted_accounts: Optional[bool] = None
     hidden_words: Optional[bool] = None
     muted_accounts: Optional[bool] = None
+    hide_like_counts: Optional[bool] = None
+    hide_share_counts: Optional[bool] = None
+    app_language: Optional[str] = None
     autoplay_reels: Optional[bool] = None
     appearance_mode: Optional[str] = None
 
@@ -143,6 +149,7 @@ def update_settings(
         "comment_audience", "gif_comments_enabled",
         "story_shares_enabled", "posts_reels_to_stories_enabled", "reposts_enabled", "website_embeds_enabled", "featured_content_requests_enabled",
         "restricted_accounts", "hidden_words", "muted_accounts",
+        "hide_like_counts", "hide_share_counts", "app_language",
         "autoplay_reels", "appearance_mode",
     ]
     for field in toggle_fields:

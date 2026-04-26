@@ -4,6 +4,7 @@ import { Search as SearchIcon, UserPlus, UserMinus, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { buildAssetUrl } from '../config';
+import { useLanguage } from '../context/LanguageContext';
 
 function Search() {
   const [query, setQuery] = useState('');
@@ -11,6 +12,7 @@ function Search() {
   const [loading, setLoading] = useState(false);
   const [followingMap, setFollowingMap] = useState({});
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -57,7 +59,7 @@ function Search() {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '64px 24px' }}>
-      <h1 className="gradient-text" style={{ marginBottom: '32px' }}>Find Creators</h1>
+      <h1 className="gradient-text" style={{ marginBottom: '32px' }}>{t('search.title')}</h1>
 
       {/* Search Input Area */}
       <div className="glass" style={{
@@ -71,7 +73,7 @@ function Search() {
         <SearchIcon color="var(--accent-color)" size={24} />
         <input 
           type="text"
-          placeholder="Search by username..."
+          placeholder={t('search.placeholder')}
           className="input-field"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -86,11 +88,11 @@ function Search() {
 
       {/* Results Area */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {loading && <p style={{ textAlign: 'center' }}>Searching...</p>}
+        {loading && <p style={{ textAlign: 'center' }}>{t('search.searching')}</p>}
         
         <AnimatePresence>
           {!loading && users.length === 0 && query && (
-            <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>No users found matching "{query}"</p>
+            <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>{t('search.noUsersFound', { query })}</p>
           )}
 
           {!loading && users.map((u) => (
@@ -131,7 +133,7 @@ function Search() {
 
               <div style={{ flex: 1 }}>
                 <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{u.username}</h3>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{u.bio || "No bio yet"}</p>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{u.bio || t('search.noBio')}</p>
               </div>
 
               <button 
@@ -147,9 +149,9 @@ function Search() {
                 }}
               >
                 {followingMap[u.id] ? (
-                  <><UserMinus size={16} /> Unfollow</>
+                  <><UserMinus size={16} /> {t('search.unfollow')}</>
                 ) : (
-                  <><UserPlus size={16} /> Follow</>
+                  <><UserPlus size={16} /> {t('search.follow')}</>
                 )}
               </button>
             </motion.div>
@@ -159,7 +161,7 @@ function Search() {
         {!query && !loading && (
           <div style={{ textAlign: 'center', padding: '64px', opacity: 0.5 }}>
             <User size={64} style={{ marginBottom: '16px' }} />
-            <p>Start typing to search for creators</p>
+            <p>{t('search.startTyping')}</p>
           </div>
         )}
       </div>

@@ -4,11 +4,13 @@ import { Heart, MessageSquare, UserPlus, BellOff, Reply } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { buildAssetUrl } from '../config';
+import { useLanguage } from '../context/LanguageContext';
 
 function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchNotifications();
@@ -58,13 +60,13 @@ function Notifications() {
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '64px 24px' }}>
       <header style={{ marginBottom: '40px' }}>
-        <h1 className="gradient-text" style={{ fontSize: '2.5rem', marginBottom: '8px' }}>Notifications</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Activity from your universe.</p>
+        <h1 className="gradient-text" style={{ fontSize: '2.5rem', marginBottom: '8px' }}>{t('notifications.title')}</h1>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('notifications.subtitle')}</p>
       </header>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '100px' }}>
-          <p>Fetching activity...</p>
+          <p>{t('notifications.fetching')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -76,7 +78,7 @@ function Notifications() {
                 style={{ textAlign: 'center', padding: '64px', opacity: 0.5 }}
               >
                 <BellOff size={64} style={{ marginBottom: '16px' }} />
-                <p>No activity yet.</p>
+                <p>{t('notifications.empty')}</p>
               </motion.div>
             ) : (
               notifications.map((n, index) => (

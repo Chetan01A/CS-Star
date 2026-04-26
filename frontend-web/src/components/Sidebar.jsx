@@ -6,12 +6,14 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
+import { useLanguage } from '../context/LanguageContext';
 
 function Sidebar() {
   const [unseenCount, setUnseenCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const fetchUnseenCount = useCallback(async () => {
     try {
@@ -88,14 +90,14 @@ function Sidebar() {
   };
 
   const menuItems = [
-    { name: 'Home', icon: <Home size={28} strokeWidth={2.1} />, path: '/' },
-    { name: 'Reels', icon: <PlaySquare size={28} strokeWidth={2.1} />, path: '/reels' },
-    { name: 'Messages', icon: <Send size={28} strokeWidth={2.1} />, path: '/messages', badge: unreadMessages },
-    { name: 'Search', icon: <Search size={28} strokeWidth={2.1} />, path: '/search' },
-    { name: 'Explore', icon: <Compass size={28} strokeWidth={2.1} />, path: '/explore' },
-    { name: 'Notifications', icon: <Heart size={28} strokeWidth={2.1} />, path: '/notifications', badge: unseenCount },
-    { name: 'Create', icon: <Plus size={28} strokeWidth={2.1} />, path: '/create' },
-    { name: 'Profile', icon: <User size={28} strokeWidth={2.1} />, path: '/profile/me' },
+    { name: t('nav.home'), icon: <Home size={28} strokeWidth={2.1} />, path: '/' },
+    { name: t('nav.reels'), icon: <PlaySquare size={28} strokeWidth={2.1} />, path: '/reels' },
+    { name: t('nav.messages'), icon: <Send size={28} strokeWidth={2.1} />, path: '/messages', badge: unreadMessages },
+    { name: t('nav.search'), icon: <Search size={28} strokeWidth={2.1} />, path: '/search' },
+    { name: t('nav.explore'), icon: <Compass size={28} strokeWidth={2.1} />, path: '/explore' },
+    { name: t('nav.notifications'), icon: <Heart size={28} strokeWidth={2.1} />, path: '/notifications', badge: unseenCount },
+    { name: t('nav.create'), icon: <Plus size={28} strokeWidth={2.1} />, path: '/create' },
+    { name: t('nav.profile'), icon: <User size={28} strokeWidth={2.1} />, path: '/profile/me' },
   ];
 
   return (
@@ -218,7 +220,7 @@ function Sidebar() {
           }}
         >
           <Menu size={28} strokeWidth={2.1} />
-          <span style={{ fontSize: '0.98rem' }}>More</span>
+          <span style={{ fontSize: '0.98rem' }}>{t('nav.more')}</span>
         </button>
 
         <AnimatePresence>
@@ -243,11 +245,11 @@ function Sidebar() {
               }}
             >
               {[
-                { label: 'Settings', icon: Settings, action: 'settings' },
-                { label: 'Your activity', icon: Activity, action: 'Your activity' },
-                { label: 'Saved', icon: Bookmark, action: 'saved' },
-                { label: 'Switch appearance', icon: Palette, action: 'Switch appearance' },
-                { label: 'Report a problem', icon: AlertCircle, action: 'Report a problem' },
+                { label: t('menu.settings'), icon: Settings, action: 'settings' },
+                { label: t('menu.yourActivity'), icon: Activity, action: 'Your activity' },
+                { label: t('menu.saved'), icon: Bookmark, action: 'saved' },
+                { label: t('menu.switchAppearance'), icon: Palette, action: 'Switch appearance' },
+                { label: t('menu.reportProblem'), icon: AlertCircle, action: 'Report a problem' },
               ].map((item) => {
                 const Icon = item.icon;
                 return (
@@ -282,7 +284,7 @@ function Sidebar() {
 
               {[
                 { label: 'Switch Accounts', icon: Repeat2, action: 'Switch Accounts' },
-                { label: 'Log out', icon: LogOut, action: 'logout', danger: true },
+                { label: t('menu.logout'), icon: LogOut, action: 'logout', danger: true },
               ].map((item) => {
                 const Icon = item.icon;
                 return (

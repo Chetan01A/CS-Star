@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../api';
 import { buildAssetUrl } from '../config';
+import { languageOptions } from '../i18n';
+import { useLanguage } from '../context/LanguageContext';
 import {
   User,
   Bell,
@@ -60,23 +62,27 @@ const settingsSections = [
 ];
 
 /* ─── Toggle card (used in almost every panel) ─── */
-const ToggleCard = ({ title, description, enabled, onToggle, actionLabel, saving }) => (
-  <div className="glass" style={{ padding: '18px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-    <div>
-      <p style={{ margin: '0 0 6px', fontWeight: 700 }}>{title}</p>
-      <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem' }}>{description}</p>
+const ToggleCard = ({ title, description, enabled, onToggle, actionLabel, saving }) => {
+  const { t } = useLanguage();
+
+  return (
+    <div className="glass" style={{ padding: '18px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+      <div>
+        <p style={{ margin: '0 0 6px', fontWeight: 700 }}>{title}</p>
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem' }}>{description}</p>
+      </div>
+      <button
+        onClick={onToggle}
+        disabled={saving}
+        className={enabled ? 'btn-primary' : 'glass'}
+        style={{ minWidth: '92px', padding: '10px 14px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: saving ? 0.6 : 1 }}
+      >
+        {saving ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : null}
+        {actionLabel || (enabled ? t('On') : t('Off'))}
+      </button>
     </div>
-    <button
-      onClick={onToggle}
-      disabled={saving}
-      className={enabled ? 'btn-primary' : 'glass'}
-      style={{ minWidth: '92px', padding: '10px 14px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: saving ? 0.6 : 1 }}
-    >
-      {saving ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : null}
-      {actionLabel || (enabled ? 'ON' : 'OFF')}
-    </button>
-  </div>
-);
+  );
+};
 
 const SettingsNavCard = ({ title, description, onClick, value }) => (
   <button
@@ -310,6 +316,57 @@ const SwitchRow = ({ label, checked, onToggle, disabled, bordered = false }) => 
   </div>
 );
 
+const DetailSwitchRow = ({ title, description, checked, onToggle, disabled }) => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: '24px',
+      padding: '8px 0',
+    }}
+  >
+    <div style={{ maxWidth: '760px' }}>
+      <p style={{ margin: '0 0 10px', fontSize: '1.15rem', fontWeight: 500 }}>{title}</p>
+      <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.65, fontSize: '0.98rem' }}>
+        {description}
+      </p>
+    </div>
+    <button
+      onClick={onToggle}
+      disabled={disabled}
+      aria-pressed={checked}
+      style={{
+        width: '46px',
+        height: '26px',
+        borderRadius: '999px',
+        border: 'none',
+        cursor: disabled ? 'default' : 'pointer',
+        background: checked ? '#ffffff' : '#2a2f37',
+        position: 'relative',
+        transition: 'background 0.2s ease',
+        padding: 0,
+        opacity: disabled ? 0.7 : 1,
+        flexShrink: 0,
+        marginTop: '2px',
+      }}
+    >
+      <span
+        style={{
+          position: 'absolute',
+          top: '2px',
+          left: checked ? '22px' : '2px',
+          width: '22px',
+          height: '22px',
+          borderRadius: '50%',
+          background: checked ? '#0f141a' : '#0f141a',
+          transition: 'left 0.2s ease',
+        }}
+      />
+    </button>
+  </div>
+);
+
 /* ─── Toast notification ─── */
 const Toast = ({ message, visible }) => (
   <div
@@ -327,6 +384,8 @@ const Toast = ({ message, visible }) => (
 
 /* ─── Privacy confirmation modal ─── */
 const PrivacyConfirmModal = ({ visible, onConfirm, onCancel, saving }) => {
+  const { t } = useLanguage();
+
   if (!visible) return null;
   return (
     <div
@@ -348,7 +407,7 @@ const PrivacyConfirmModal = ({ visible, onConfirm, onCancel, saving }) => {
         {/* Header */}
         <div style={{ padding: '28px 28px 20px', textAlign: 'center' }}>
           <h3 style={{ margin: '0 0 24px', fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>
-            Switch to private account?
+            {t('Switch to private account?')}
           </h3>
 
           {/* Info bullets */}
@@ -358,7 +417,7 @@ const PrivacyConfirmModal = ({ visible, onConfirm, onCancel, saving }) => {
                 <Lock size={15} color="#fff" />
               </div>
               <p style={{ margin: 0, fontSize: '0.92rem', color: '#e0e0e0', lineHeight: 1.5 }}>
-                Only your followers will be able to see your photos and videos.
+                {t('Only your followers will be able to see your photos and videos.')}
               </p>
             </div>
 
@@ -367,7 +426,7 @@ const PrivacyConfirmModal = ({ visible, onConfirm, onCancel, saving }) => {
                 <Shield size={15} color="#fff" />
               </div>
               <p style={{ margin: 0, fontSize: '0.92rem', color: '#e0e0e0', lineHeight: 1.5 }}>
-                This won't change who can message, tag or @mention you, but you won't be able to tag people who don't follow you.
+                {t("This won't change who can message, tag or @mention you, but you won't be able to tag people who don't follow you.")}
               </p>
             </div>
 
@@ -376,7 +435,7 @@ const PrivacyConfirmModal = ({ visible, onConfirm, onCancel, saving }) => {
                 <AlertTriangle size={15} color="#0095f6" />
               </div>
               <p style={{ margin: 0, fontSize: '0.92rem', color: '#0095f6', lineHeight: 1.5 }}>
-                No one can reuse your content. All reels, posts and stories that previously used your content in features like remixes, sequences, templates or stickers will be deleted. If you switch back to a public account within 24 hours, they will be restored.
+                {t('No one can reuse your content. All reels, posts and stories that previously used your content in features like remixes, sequences, templates or stickers will be deleted. If you switch back to a public account within 24 hours, they will be restored.')}
               </p>
             </div>
           </div>
@@ -394,7 +453,7 @@ const PrivacyConfirmModal = ({ visible, onConfirm, onCancel, saving }) => {
             }}
           >
             {saving ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : null}
-            Switch to private
+            {t('Switch to private')}
           </button>
           <button
             onClick={onCancel}
@@ -403,7 +462,7 @@ const PrivacyConfirmModal = ({ visible, onConfirm, onCancel, saving }) => {
               color: '#fff', fontSize: '0.95rem', fontWeight: 500, cursor: 'pointer',
             }}
           >
-            Cancel
+            {t('Cancel')}
           </button>
         </div>
       </div>
@@ -412,6 +471,7 @@ const PrivacyConfirmModal = ({ visible, onConfirm, onCancel, saving }) => {
 };
 
 function Settings() {
+  const { language, setLanguage, t } = useLanguage();
   const [activeSection, setActiveSection] = useState('edit-profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -425,6 +485,14 @@ function Settings() {
   const [storyAudience, setStoryAudience] = useState([]);
   const [storyAudienceLoading, setStoryAudienceLoading] = useState(false);
   const [storySearch, setStorySearch] = useState('');
+  const [languageSearch, setLanguageSearch] = useState('');
+  const getSectionTitle = (sectionId) => {
+    const section = settingsSections.find((entry) => entry.id === sectionId);
+    return t(section?.label || sectionId);
+  };
+  const getLanguageLabel = (option) => {
+    return option.label;
+  };
 
   // ─── Settings state (mirrors backend) ───
   const [settings, setSettings] = useState({
@@ -459,6 +527,9 @@ function Settings() {
     restricted_accounts: false,
     hidden_words: true,
     muted_accounts: false,
+    hide_like_counts: false,
+    hide_share_counts: false,
+    app_language: 'en',
     autoplay_reels: true,
     appearance_mode: 'dark',
   });
@@ -490,7 +561,12 @@ function Settings() {
           api.get('/settings/'),
           userId ? api.get(`/profile/${userId}`) : Promise.resolve(null),
         ]);
-        if (settingsData) setSettings(settingsData);
+        if (settingsData) {
+          setSettings(settingsData);
+          if (settingsData.app_language) {
+            setLanguage(settingsData.app_language);
+          }
+        }
         if (profileData) {
           setProfileInfo({
             username: profileData.username || '',
@@ -579,17 +655,53 @@ function Settings() {
     setSaving(true);
     try {
       await api.put('/settings/', { [key]: value });
-      showToast('Setting saved');
+      showToast(t('common.settingsSaved'));
     } catch (e) {
       console.error('Save failed', e);
       setSettings((s) => ({ ...s, [key]: prev }));
-      showToast('Failed to save');
+      showToast(t('Failed to save'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateSettingsBatch = async (updates) => {
+    const previousValues = Object.fromEntries(
+      Object.keys(updates).map((key) => [key, settings[key]])
+    );
+    setSettings((s) => ({ ...s, ...updates }));
+    setSaving(true);
+    try {
+      await api.put('/settings/', updates);
+      showToast(t('common.settingsSaved'));
+    } catch (e) {
+      console.error('Save failed', e);
+      setSettings((s) => ({ ...s, ...previousValues }));
+      showToast(t('Failed to save'));
     } finally {
       setSaving(false);
     }
   };
 
   const toggleSetting = (key) => updateSetting(key, !settings[key]);
+
+  const handleLanguageSelect = async (languageCode) => {
+    const previousLanguage = settings.app_language || language;
+    setSettings((s) => ({ ...s, app_language: languageCode }));
+    setLanguage(languageCode);
+    setSaving(true);
+    try {
+      await api.put('/settings/', { app_language: languageCode });
+      showToast(t('common.settingsSaved'));
+    } catch (e) {
+      console.error('Language save failed', e);
+      setSettings((s) => ({ ...s, app_language: previousLanguage }));
+      setLanguage(previousLanguage);
+      showToast(t('Failed to save'));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const toggleHiddenStoryUser = async (targetUserId) => {
     const currentList = Array.isArray(settings.hidden_story_live_from) ? settings.hidden_story_live_from : [];
@@ -637,10 +749,10 @@ function Settings() {
         website: settings.website,
         gender: settings.gender,
       });
-      showToast('Profile updated');
+      showToast(t('Profile updated'));
     } catch (e) {
       console.error('Profile save failed', e);
-      showToast('Failed to save');
+      showToast(t('Failed to save'));
     } finally {
       setSaving(false);
     }
@@ -658,10 +770,10 @@ function Settings() {
       if (data?.profile_pic) {
         setProfileInfo((p) => ({ ...p, profile_pic: data.profile_pic }));
       }
-      showToast('Photo updated');
+      showToast(t('Photo updated'));
     } catch (e) {
       console.error('Photo upload failed', e);
-      showToast('Upload failed');
+      showToast(t('Upload failed'));
     } finally {
       setSaving(false);
     }
@@ -672,7 +784,7 @@ function Settings() {
     try {
       await api.fetch(`/settings/block/${id}`, { method: 'DELETE' });
       setBlockedUsers((prev) => prev.filter((u) => u.id !== id));
-      showToast('User unblocked');
+      showToast(t('User unblocked'));
     } catch (e) {
       console.error('Unblock failed', e);
     }
@@ -680,6 +792,12 @@ function Settings() {
 
   const groups = Array.from(new Set(settingsSections.map((s) => s.group)));
   const hiddenStoryIds = Array.isArray(settings.hidden_story_live_from) ? settings.hidden_story_live_from : [];
+  const normalizedLanguageSearch = languageSearch.trim().toLowerCase();
+  const filteredLanguages = languageOptions.filter((option) => {
+    if (!normalizedLanguageSearch) return true;
+    const haystack = [getLanguageLabel(option), option.label, option.code, ...(option.search || [])].join(' ').toLowerCase();
+    return haystack.includes(normalizedLanguageSearch);
+  });
   const filteredStoryAudience = storyAudience.filter((user) => {
     const search = storySearch.trim().toLowerCase();
     if (!search) return true;
@@ -701,11 +819,11 @@ function Settings() {
       <div className="glass settings-layout" style={{ display: 'grid', gridTemplateColumns: '320px minmax(0, 1fr)', height: 'calc(100vh - 48px)', overflow: 'hidden' }}>
         {/* ─── SIDEBAR ─── */}
         <div className="settings-sidebar-scroll" style={{ borderRight: '1px solid var(--card-border)', padding: '26px 18px', overflowY: 'auto', minHeight: 0 }}>
-          <h2 style={{ margin: '0 0 26px', fontSize: '1.4rem' }}>Settings</h2>
+          <h2 style={{ margin: '0 0 26px', fontSize: '1.4rem' }}>{t('settings.title')}</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {groups.map((group) => (
               <div key={group}>
-                <p style={{ margin: '0 0 10px', color: '#c8b07a', fontSize: '0.84rem', fontWeight: 600 }}>{group}</p>
+                <p style={{ margin: '0 0 10px', color: '#c8b07a', fontSize: '0.84rem', fontWeight: 600 }}>{t(group)}</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {settingsSections.filter((s) => s.group === group).map((section) => {
                     const Icon = section.icon;
@@ -722,7 +840,7 @@ function Settings() {
                         }}
                       >
                         <Icon size={18} />
-                        <span>{section.label}</span>
+                        <span>{t(section.label)}</span>
                       </button>
                     );
                   })}
@@ -738,7 +856,7 @@ function Settings() {
           {/* ══════ EDIT PROFILE ══════ */}
           {activeSection === 'edit-profile' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Edit profile</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('edit-profile')}</h3>
 
               {/* Avatar card */}
               <div className="glass" style={{ padding: '16px 18px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '18px' }}>
@@ -761,16 +879,16 @@ function Settings() {
                 </div>
                 <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handlePhotoUpload} />
                 <button className="btn-primary" style={{ borderRadius: '12px' }} onClick={() => fileInputRef.current?.click()}>
-                  CHANGE PHOTO
+                  {t('Change photo')}
                 </button>
               </div>
 
               {/* Website */}
               <div>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Website</p>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>{t('Website')}</p>
                 <input
                   className="input-field"
-                  placeholder="Website"
+                  placeholder={t('Website')}
                   value={settings.website}
                   onChange={(e) => setSettings((s) => ({ ...s, website: e.target.value }))}
                 />
@@ -779,12 +897,12 @@ function Settings() {
               {/* Bio */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <p style={{ margin: 0, fontWeight: 700 }}>Bio</p>
+                  <p style={{ margin: 0, fontWeight: 700 }}>{t('Bio')}</p>
                   <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{(settings.bio || '').length} / 150</span>
                 </div>
                 <textarea
                   className="input-field"
-                  placeholder="Bio"
+                  placeholder={t('Bio')}
                   style={{ minHeight: '110px', resize: 'none' }}
                   maxLength={150}
                   value={settings.bio}
@@ -794,8 +912,8 @@ function Settings() {
 
               {/* Show Threads badge */}
               <ToggleCard
-                title="Show Threads badge"
-                description="Display an extra badge under your profile details."
+                title={t('Show Threads badge')}
+                description={t('Display an extra badge under your profile details.')}
                 enabled={settings.show_threads_badge}
                 onToggle={() => toggleSetting('show_threads_badge')}
                 saving={saving}
@@ -803,23 +921,23 @@ function Settings() {
 
               {/* Gender */}
               <div>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Gender</p>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>{t('Gender')}</p>
                 <select
                   className="input-field"
                   value={settings.gender}
                   onChange={(e) => setSettings((s) => ({ ...s, gender: e.target.value }))}
                 >
-                  <option>Male</option>
-                  <option>Female</option>
-                  <option>Prefer not to say</option>
+                  <option>{t('Male')}</option>
+                  <option>{t('Female')}</option>
+                  <option>{t('Prefer not to say')}</option>
                 </select>
-                <p style={{ margin: '10px 0 0', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>This will not be part of your public profile.</p>
+                <p style={{ margin: '10px 0 0', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>{t('This will not be part of your public profile.')}</p>
               </div>
 
               {/* Show account suggestions */}
               <ToggleCard
-                title="Show account suggestions on profiles"
-                description="Let similar profile suggestions appear for people who view your account."
+                title={t('Show account suggestions on profiles')}
+                description={t('Let similar profile suggestions appear for people who view your account.')}
                 enabled={settings.show_profile_suggestions}
                 onToggle={() => toggleSetting('show_profile_suggestions')}
                 saving={saving}
@@ -833,7 +951,7 @@ function Settings() {
                 style={{ padding: '14px 0', borderRadius: '14px', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
                 {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Check size={16} />}
-                Save Profile
+                {t('Save profile')}
               </button>
             </div>
           )}
@@ -841,10 +959,10 @@ function Settings() {
           {/* ══════ NOTIFICATIONS ══════ */}
           {activeSection === 'notifications' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Notifications</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('notifications')}</h3>
               <ToggleCard
-                title="Push notifications"
-                description="Control likes, comments, mentions and message alerts."
+                title={t('Push notifications')}
+                description={t('Control likes, comments, mentions and message alerts.')}
                 enabled={settings.push_notifications}
                 onToggle={() => toggleSetting('push_notifications')}
                 saving={saving}
@@ -855,12 +973,12 @@ function Settings() {
           {/* ══════ ACCOUNT PRIVACY ══════ */}
           {activeSection === 'privacy' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Account privacy</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('privacy')}</h3>
 
               <div className="glass" style={{ padding: '18px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
                 <div>
-                  <p style={{ margin: '0 0 6px', fontWeight: 700 }}>Private account</p>
-                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem' }}>Only approved followers can see your posts and videos.</p>
+                  <p style={{ margin: '0 0 6px', fontWeight: 700 }}>{t('Private account')}</p>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem' }}>{t('Only approved followers can see your posts and videos.')}</p>
                 </div>
                 {/* Toggle switch styled like Instagram */}
                 <button
@@ -890,7 +1008,7 @@ function Settings() {
               {settings.account_private && (
                 <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
                   <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                    When your account is private, only people you approve can see your photos and videos on CS-Star. Your existing followers won't be affected.
+                    {t("When your account is private, only people you approve can see your photos and videos on CS-Star. Your existing followers won't be affected.")}
                   </p>
                 </div>
               )}
@@ -898,7 +1016,7 @@ function Settings() {
               {!settings.account_private && (
                 <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
                   <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                    When your account is public, your profile and posts can be seen by anyone, on or off CS-Star, even if they don't have a CS-Star account. Certain info on your profile, like your name and profile photo, is visible to everyone.
+                    {t("When your account is public, your profile and posts can be seen by anyone, on or off CS-Star, even if they don't have a CS-Star account. Certain info on your profile, like your name and profile photo, is visible to everyone.")}
                   </p>
                 </div>
               )}
@@ -918,10 +1036,10 @@ function Settings() {
           {/* ══════ CLOSE FRIENDS ══════ */}
           {activeSection === 'close-friends' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Close friends</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('close-friends')}</h3>
               <ToggleCard
-                title="Close friends list"
-                description="Share stories and notes with a smaller trusted circle."
+                title={t('Close friends list')}
+                description={t('Share stories and notes with a smaller trusted circle.')}
                 enabled={settings.close_friends_enabled}
                 onToggle={() => toggleSetting('close_friends_enabled')}
                 saving={saving}
@@ -932,11 +1050,11 @@ function Settings() {
           {/* ══════ BLOCKED ══════ */}
           {activeSection === 'blocked' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Blocked</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('blocked')}</h3>
               {blockedUsers.length === 0 ? (
                 <div className="glass" style={{ padding: '28px', borderRadius: '20px', textAlign: 'center' }}>
                   <Ban size={36} style={{ color: 'var(--text-secondary)', marginBottom: '12px' }} />
-                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>You haven't blocked anyone yet.</p>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{t("You haven't blocked anyone yet.")}</p>
                 </div>
               ) : (
                 blockedUsers.map((u) => (
@@ -952,7 +1070,7 @@ function Settings() {
                       <span style={{ fontWeight: 600 }}>{u.username}</span>
                     </div>
                     <button className="glass" onClick={() => handleUnblock(u.id)} style={{ padding: '8px 16px', borderRadius: '12px', cursor: 'pointer', color: 'white', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <X size={14} /> Unblock
+                      <X size={14} /> {t('Unblock')}
                     </button>
                   </div>
                 ))
@@ -965,22 +1083,22 @@ function Settings() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
               {storyLocationView === 'menu' ? (
                 <>
-                  <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Story, live and location</h3>
+                  <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('story-location')}</h3>
                   <SettingsNavCard
-                    title="Hide story and live from"
-                    value={hiddenStoryIds.length ? `${hiddenStoryIds.length} selected` : ''}
+                    title={t('Hide story and live from')}
+                    value={hiddenStoryIds.length ? t('{count} selected', { count: hiddenStoryIds.length }) : ''}
                     onClick={() => setStoryLocationView('hide-story')}
                   />
                   <ToggleCard
-                    title="Location sharing"
-                    description="Choose whether location details can be attached to your story activity."
+                    title={t('Location sharing')}
+                    description={t('Choose whether location details can be attached to your story activity.')}
                     enabled={settings.story_location_sharing}
                     onToggle={() => toggleSetting('story_location_sharing')}
                     saving={saving}
                   />
                   <ToggleCard
-                    title="Story replies"
-                    description="Control whether people can reply to your stories and live updates."
+                    title={t('Story replies')}
+                    description={t('Control whether people can reply to your stories and live updates.')}
                     enabled={settings.message_replies}
                     onToggle={() => toggleSetting('message_replies')}
                     saving={saving}
@@ -995,11 +1113,11 @@ function Settings() {
                     >
                       <ChevronLeft size={24} />
                     </button>
-                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Hide story from</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Hide story from')}</h3>
                   </div>
 
                   <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: '720px' }}>
-                    Hide all photos and videos you add to your story from specific people. This also hides your live videos.
+                    {t('Hide all photos and videos you add to your story from specific people. This also hides your live videos.')}
                   </p>
 
                   <div
@@ -1016,7 +1134,7 @@ function Settings() {
                     <input
                       value={storySearch}
                       onChange={(e) => setStorySearch(e.target.value)}
-                      placeholder="Search"
+                      placeholder={t('common.search')}
                       style={{
                         flex: 1,
                         background: 'transparent',
@@ -1035,7 +1153,7 @@ function Settings() {
                       </div>
                     ) : filteredStoryAudience.length === 0 ? (
                       <div className="glass" style={{ padding: '22px', borderRadius: '18px', color: 'var(--text-secondary)' }}>
-                        {storySearch.trim() ? 'No matching followers found.' : 'No followers available yet.'}
+                        {storySearch.trim() ? t('No matching followers found.') : t('No followers available yet.')}
                       </div>
                     ) : (
                       filteredStoryAudience.map((user) => {
@@ -1085,7 +1203,7 @@ function Settings() {
                               <div style={{ minWidth: 0 }}>
                                 <p style={{ margin: '0 0 4px', fontWeight: 700 }}>{user.username}</p>
                                 <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem' }}>
-                                  {isHidden ? 'Hidden from your story and live' : 'Can see your story and live'}
+                                  {isHidden ? t('Hidden from your story and live') : t('Can see your story and live')}
                                 </p>
                               </div>
                             </div>
@@ -1120,7 +1238,7 @@ function Settings() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
               {messagesView === 'menu' ? (
                 <>
-                  <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Messages and story replies</h3>
+                  <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('messages')}</h3>
 
                   <p style={{ margin: '10px 0 6px', fontSize: '1.45rem', fontWeight: 800 }}>
                     How people can reach you
@@ -1206,7 +1324,7 @@ function Settings() {
                     >
                       <ChevronLeft size={24} />
                     </button>
-                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Message requests</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Message requests')}</h3>
                   </div>
 
                   <div style={{ maxWidth: '640px', display: 'flex', flexDirection: 'column', gap: '34px' }}>
@@ -1283,7 +1401,7 @@ function Settings() {
                     >
                       <ChevronLeft size={24} />
                     </button>
-                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Story replies</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Story replies')}</h3>
                   </div>
 
                   <div style={{ maxWidth: '640px' }}>
@@ -1331,7 +1449,7 @@ function Settings() {
                     >
                       <ChevronLeft size={24} />
                     </button>
-                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Show activity status</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Show activity status')}</h3>
                   </div>
 
                   <div style={{ maxWidth: '760px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -1387,7 +1505,7 @@ function Settings() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
               {tagsView === 'menu' ? (
                 <>
-                  <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Tags and mentions</h3>
+                  <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('tags-mentions')}</h3>
 
                   <div style={{ maxWidth: '760px', display: 'flex', flexDirection: 'column', gap: '34px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1462,7 +1580,7 @@ function Settings() {
                     >
                       <ChevronLeft size={24} />
                     </button>
-                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Manually approve tags</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Manually approve tags')}</h3>
                   </div>
 
                   <div style={{ maxWidth: '760px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -1511,7 +1629,7 @@ function Settings() {
           {/* ══════ COMMENTS ══════ */}
           {activeSection === 'comments' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Comments</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('comments')}</h3>
               <div style={{ maxWidth: '760px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
                 <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Allow comments from</p>
 
@@ -1596,7 +1714,7 @@ function Settings() {
           {/* ══════ SHARING & REUSE ══════ */}
           {activeSection === 'sharing-reuse' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Sharing and reuse</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('sharing-reuse')}</h3>
 
               <div style={{ maxWidth: '760px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -1671,10 +1789,10 @@ function Settings() {
           {/* ══════ RESTRICTED ACCOUNTS ══════ */}
           {activeSection === 'restricted-accounts' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Restricted accounts</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('restricted-accounts')}</h3>
               <ToggleCard
-                title="Restrictions"
-                description="Limit interactions from accounts without fully blocking them."
+                title={t('Restrictions')}
+                description={t('Limit interactions from accounts without fully blocking them.')}
                 enabled={settings.restricted_accounts}
                 onToggle={() => toggleSetting('restricted_accounts')}
                 saving={saving}
@@ -1685,10 +1803,10 @@ function Settings() {
           {/* ══════ HIDDEN WORDS ══════ */}
           {activeSection === 'hidden-words' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Hidden words</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('hidden-words')}</h3>
               <ToggleCard
-                title="Filter offensive words"
-                description="Hide messages, comments, and requests that may contain offensive content."
+                title={t('Filter offensive words')}
+                description={t('Hide messages, comments, and requests that may contain offensive content.')}
                 enabled={settings.hidden_words}
                 onToggle={() => toggleSetting('hidden_words')}
                 saving={saving}
@@ -1699,10 +1817,10 @@ function Settings() {
           {/* ══════ MUTED ACCOUNTS ══════ */}
           {activeSection === 'muted-accounts' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Muted accounts</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('muted-accounts')}</h3>
               <ToggleCard
-                title="Muted accounts list"
-                description="Manage accounts whose posts, stories, or notes you have muted."
+                title={t('Muted accounts list')}
+                description={t('Manage accounts whose posts, stories, or notes you have muted.')}
                 enabled={settings.muted_accounts}
                 onToggle={() => toggleSetting('muted_accounts')}
                 saving={saving}
@@ -1712,24 +1830,32 @@ function Settings() {
 
           {/* ══════ CONTENT PREFERENCES ══════ */}
           {activeSection === 'like-share-counts' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Like and share counts</h3>
-              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Manage visibility</p>
-                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  Control whether like and share counts are shown across your CS-Star experience. More detailed controls can be added here next.
-                </p>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', maxWidth: '860px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('like-share-counts')}</h3>
+
+              <DetailSwitchRow
+                title={t('Hide like & share counts')}
+                description={t('On CS-Star, the number of likes and shares on posts and reels from other accounts will be hidden. You can hide the number of likes and shares on your own posts and reels by going to Advanced settings before sharing.')}
+                checked={settings.hide_like_counts || settings.hide_share_counts}
+                onToggle={() => {
+                  const nextValue = !(settings.hide_like_counts || settings.hide_share_counts);
+                  updateSettingsBatch({
+                    hide_like_counts: nextValue,
+                    hide_share_counts: nextValue,
+                  });
+                }}
+                disabled={saving}
+              />
             </div>
           )}
 
           {activeSection === 'archiving-downloading' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Archiving and downloading</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('archiving-downloading')}</h3>
               <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Your saved content controls</p>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>{t('Your saved content controls')}</p>
                 <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  Use this area to manage archived posts, downloaded media, and future backup options.
+                  {t('Use this area to manage archived posts, downloaded media, and future backup options.')}
                 </p>
               </div>
             </div>
@@ -1737,35 +1863,126 @@ function Settings() {
 
           {activeSection === 'accessibility' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Accessibility</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('accessibility')}</h3>
               <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Accessibility settings</p>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>{t('Accessibility settings')}</p>
                 <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  Accessibility options like captions, motion preferences, and text readability can live here.
+                  {t('Accessibility options like captions, motion preferences, and text readability can live here.')}
                 </p>
               </div>
             </div>
           )}
 
           {activeSection === 'language' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Language</h3>
-              <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>App language</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', maxWidth: '760px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Languages size={22} />
+                <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('settings.languagePreferences')}</h3>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <p style={{ margin: 0, fontSize: '1.35rem', fontWeight: 700 }}>{t('settings.appLanguage')}</p>
                 <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  Language selection and translation preferences can be configured here.
+                  {t('settings.languageDescription')}
                 </p>
+              </div>
+
+              <div
+                className="glass"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '14px 16px',
+                  borderRadius: '20px',
+                  background: 'rgba(255,255,255,0.06)',
+                }}
+              >
+                <Search size={18} color="var(--text-secondary)" />
+                <input
+                  value={languageSearch}
+                  onChange={(e) => setLanguageSearch(e.target.value)}
+                  placeholder={t('settings.searchLanguages')}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'white',
+                    outline: 'none',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+
+              <div
+                className="glass"
+                style={{
+                  borderRadius: '22px',
+                  overflow: 'hidden',
+                  border: '1px solid var(--card-border)',
+                  maxHeight: '480px',
+                  overflowY: 'auto',
+                }}
+              >
+                {filteredLanguages.map((option, index) => {
+                  const selected = (settings.app_language || language) === option.code;
+                  return (
+                    <button
+                      key={option.code}
+                      onClick={() => handleLanguageSelect(option.code)}
+                      disabled={saving}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '16px',
+                        padding: '16px 18px',
+                        border: 'none',
+                        color: 'white',
+                        background: selected ? 'rgba(255,255,255,0.08)' : 'transparent',
+                        cursor: saving ? 'default' : 'pointer',
+                        textAlign: 'left',
+                        borderBottom: index === filteredLanguages.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                        opacity: saving ? 0.72 : 1,
+                      }}
+                    >
+                      <span style={{ fontSize: '1rem', fontWeight: selected ? 700 : 500 }}>{getLanguageLabel(option)}</span>
+                      <span
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '50%',
+                          border: selected ? 'none' : '1.5px solid rgba(255,255,255,0.8)',
+                          background: selected ? '#ffffff' : 'transparent',
+                          color: selected ? '#0b1016' : 'transparent',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {selected ? <Check size={16} strokeWidth={3} /> : null}
+                      </span>
+                    </button>
+                  );
+                })}
+                {!filteredLanguages.length && (
+                  <div style={{ padding: '20px 18px', color: 'var(--text-secondary)' }}>
+                    {t('No languages found.')}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {activeSection === 'website-permissions' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Website permissions</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('website-permissions')}</h3>
               <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Browser and site access</p>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>{t('Browser and site access')}</p>
                 <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  Manage website-level permissions like camera, microphone, notifications, and embedded experiences here.
+                  {t('Manage website-level permissions like camera, microphone, notifications, and embedded experiences here.')}
                 </p>
               </div>
             </div>
@@ -1773,11 +1990,11 @@ function Settings() {
 
           {activeSection === 'help' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Help</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('help')}</h3>
               <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Support resources</p>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>{t('Support resources')}</p>
                 <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  Find answers to common questions, report a problem, and get help with your CS-Star account here.
+                  {t('Find answers to common questions, report a problem, and get help with your CS-Star account here.')}
                 </p>
               </div>
             </div>
@@ -1785,11 +2002,11 @@ function Settings() {
 
           {activeSection === 'privacy-center' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Privacy Center</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('privacy-center')}</h3>
               <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Privacy tools</p>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>{t('Privacy tools')}</p>
                 <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  Review privacy information, manage personal data settings, and understand how your information is used on CS-Star.
+                  {t('Review privacy information, manage personal data settings, and understand how your information is used on CS-Star.')}
                 </p>
               </div>
             </div>
@@ -1797,11 +2014,11 @@ function Settings() {
 
           {activeSection === 'account-status' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Account Status</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('account-status')}</h3>
               <div className="glass" style={{ padding: '18px', borderRadius: '20px' }}>
-                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Current account standing</p>
+                <p style={{ margin: '0 0 10px', fontWeight: 700 }}>{t('Current account standing')}</p>
                 <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  Check whether your account and content are in good standing, and review any future status updates here.
+                  {t('Check whether your account and content are in good standing, and review any future status updates here.')}
                 </p>
               </div>
             </div>
@@ -1809,18 +2026,18 @@ function Settings() {
 
           {activeSection === 'preferences' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>Content preferences</h3>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{getSectionTitle('preferences')}</h3>
               <ToggleCard
-                title="Autoplay reels"
-                description="Choose whether videos should start automatically."
+                title={t('Autoplay reels')}
+                description={t('Choose whether videos should start automatically.')}
                 enabled={settings.autoplay_reels}
                 onToggle={() => toggleSetting('autoplay_reels')}
                 saving={saving}
               />
               <div className="glass" style={{ padding: '18px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <p style={{ margin: '0 0 6px', fontWeight: 700 }}>Appearance</p>
-                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem' }}>Switch your viewing style.</p>
+                  <p style={{ margin: '0 0 6px', fontWeight: 700 }}>{t('Appearance')}</p>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem' }}>{t('Switch your viewing style.')}</p>
                 </div>
                 <select
                   value={settings.appearance_mode}
@@ -1828,9 +2045,9 @@ function Settings() {
                   className="input-field"
                   style={{ width: '180px', padding: '10px 12px' }}
                 >
-                  <option value="dark">Dark</option>
-                  <option value="midnight">Midnight</option>
-                  <option value="system">System</option>
+                  <option value="dark">{t('Dark')}</option>
+                  <option value="midnight">{t('Midnight')}</option>
+                  <option value="system">{t('System')}</option>
                 </select>
               </div>
             </div>
