@@ -85,6 +85,12 @@ function Sidebar() {
       return;
     }
 
+    if (action === 'Your activity') {
+      navigate('/activity');
+      setShowMoreMenu(false);
+      return;
+    }
+
     setShowMoreMenu(false);
     alert(`${action} will be available here.`);
   };

@@ -481,6 +481,9 @@ function Settings() {
   const [storyLocationView, setStoryLocationView] = useState('menu');
   const [messagesView, setMessagesView] = useState('menu');
   const [tagsView, setTagsView] = useState('menu');
+  const [helpView, setHelpView] = useState('menu');
+  const [privacyView, setPrivacyView] = useState('menu');
+  const [accountStatusView, setAccountStatusView] = useState('menu');
   const [relationshipCounts, setRelationshipCounts] = useState({ followers: 0, following: 0 });
   const [storyAudience, setStoryAudience] = useState([]);
   const [storyAudienceLoading, setStoryAudienceLoading] = useState(false);
@@ -626,6 +629,12 @@ function Settings() {
     if (activeSection !== 'tags-mentions') {
       setTagsView('menu');
     }
+  }, [activeSection]);
+
+  useEffect(() => {
+    if (activeSection !== 'help') setHelpView('menu');
+    if (activeSection !== 'privacy-center') setPrivacyView('menu');
+    if (activeSection !== 'account-status') setAccountStatusView('menu');
   }, [activeSection]);
 
   useEffect(() => {
@@ -1989,37 +1998,212 @@ function Settings() {
           )}
 
           {activeSection === 'help' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <h3 style={{ margin: '0 0 6px', fontSize: '1.8rem' }}>{getSectionTitle('help')}</h3>
-              <SettingsNavCard title={t('Help Center')} description={t('Find answers to common questions.')} onClick={() => showToast(t('Opening Help Center...'))} />
-              <SettingsNavCard title={t('Report a Problem')} description={t('Let us know if something is broken.')} onClick={() => showToast(t('Opening Report Dialog...'))} />
-              <SettingsNavCard title={t('Support Requests')} description={t('View your previous reports and requests.')} onClick={() => showToast(t('Loading Requests...'))} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              {helpView === 'menu' ? (
+                <>
+                  <h3 style={{ margin: '0 0 6px', fontSize: '1.8rem' }}>{getSectionTitle('help')}</h3>
+                  <SettingsNavCard title={t('Help Center')} description={t('Find answers to common questions.')} onClick={() => setHelpView('help-center')} />
+                  <SettingsNavCard title={t('Report a Problem')} description={t('Let us know if something is broken.')} onClick={() => setHelpView('report-problem')} />
+                  <SettingsNavCard title={t('Support Requests')} description={t('View your previous reports and requests.')} onClick={() => setHelpView('support-requests')} />
+                </>
+              ) : helpView === 'help-center' ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button onClick={() => setHelpView('menu')} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Help Center')}</h3>
+                  </div>
+                  <div className="glass" style={{ padding: '24px', borderRadius: '20px' }}>
+                    <p style={{ margin: '0 0 16px', fontWeight: 700, fontSize: '1.2rem' }}>{t('Frequently Asked Questions')}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px' }}>
+                        <p style={{ margin: '0 0 8px', fontWeight: 600 }}>{t('How do I reset my password?')}</p>
+                        <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{t('You can reset your password from the login screen by clicking "Forgot Password".')}</p>
+                      </div>
+                      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px' }}>
+                        <p style={{ margin: '0 0 8px', fontWeight: 600 }}>{t('How do I make my account private?')}</p>
+                        <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{t('Go to Settings > Account privacy and toggle "Private account" on.')}</p>
+                      </div>
+                      <div>
+                        <p style={{ margin: '0 0 8px', fontWeight: 600 }}>{t('How do I delete my account?')}</p>
+                        <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{t('To delete your account, please contact support via the "Report a Problem" menu.')}</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : helpView === 'report-problem' ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button onClick={() => setHelpView('menu')} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Report a Problem')}</h3>
+                  </div>
+                  <div className="glass" style={{ padding: '24px', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{t('Please describe the issue you are experiencing in detail. We will review it as soon as possible.')}</p>
+                    <textarea
+                      className="input-field"
+                      placeholder={t('Briefly explain what happened or what is not working...')}
+                      style={{ minHeight: '120px', resize: 'none' }}
+                    />
+                    <button className="btn-primary" style={{ alignSelf: 'flex-start', padding: '12px 24px', borderRadius: '12px' }} onClick={() => { showToast(t('Report submitted successfully')); setHelpView('menu'); }}>
+                      {t('Submit Report')}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button onClick={() => setHelpView('menu')} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Support Requests')}</h3>
+                  </div>
+                  <div className="glass" style={{ padding: '32px', borderRadius: '20px', textAlign: 'center' }}>
+                    <BadgeInfo size={40} style={{ color: 'var(--text-secondary)', marginBottom: '16px' }} />
+                    <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: '1.2rem' }}>{t('No Support Requests')}</p>
+                    <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{t('You haven\'t submitted any support requests yet.')}</p>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
           {activeSection === 'privacy-center' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <h3 style={{ margin: '0 0 6px', fontSize: '1.8rem' }}>{getSectionTitle('privacy-center')}</h3>
-              <SettingsNavCard title={t('Privacy Policy')} description={t('Learn how we collect and use your data.')} onClick={() => showToast(t('Opening Privacy Policy...'))} />
-              <SettingsNavCard title={t('Download Your Information')} description={t('Get a copy of what you have shared on CS-Star.')} onClick={() => showToast(t('Preparing download...'))} />
-              <SettingsNavCard title={t('Manage Data Permissions')} description={t('Review and manage your personal data settings.')} onClick={() => showToast(t('Loading permissions...'))} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              {privacyView === 'menu' ? (
+                <>
+                  <h3 style={{ margin: '0 0 6px', fontSize: '1.8rem' }}>{getSectionTitle('privacy-center')}</h3>
+                  <SettingsNavCard title={t('Privacy Policy')} description={t('Learn how we collect and use your data.')} onClick={() => setPrivacyView('privacy-policy')} />
+                  <SettingsNavCard title={t('Download Your Information')} description={t('Get a copy of what you have shared on CS-Star.')} onClick={() => setPrivacyView('download-info')} />
+                  <SettingsNavCard title={t('Manage Data Permissions')} description={t('Review and manage your personal data settings.')} onClick={() => setPrivacyView('data-permissions')} />
+                </>
+              ) : privacyView === 'privacy-policy' ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button onClick={() => setPrivacyView('menu')} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Privacy Policy')}</h3>
+                  </div>
+                  <div className="glass" style={{ padding: '24px', borderRadius: '20px', maxHeight: '500px', overflowY: 'auto' }}>
+                    <p style={{ margin: '0 0 16px', fontWeight: 700, fontSize: '1.2rem' }}>{t('Data Collection')}</p>
+                    <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      {t('We collect information you provide directly to us when you create an account, update your profile, post content, or communicate with others on the platform.')}
+                    </p>
+                    <p style={{ margin: '0 0 16px', fontWeight: 700, fontSize: '1.2rem' }}>{t('How We Use Information')}</p>
+                    <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      {t('We use the information we collect to provide, maintain, and improve our services, develop new features, and protect CS-Star and our users.')}
+                    </p>
+                    <p style={{ margin: '0 0 16px', fontWeight: 700, fontSize: '1.2rem' }}>{t('Data Sharing')}</p>
+                    <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      {t('We do not share your personal information with third parties except as described in this privacy policy, such as with your consent or for legal reasons.')}
+                    </p>
+                  </div>
+                </>
+              ) : privacyView === 'download-info' ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button onClick={() => setPrivacyView('menu')} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Download Your Information')}</h3>
+                  </div>
+                  <div className="glass" style={{ padding: '24px', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      {t('Get a copy of your photos, comments, profile information, and more. We will compile your data into a ZIP file. This process may take up to 48 hours.')}
+                    </p>
+                    <button className="btn-primary" style={{ alignSelf: 'flex-start', padding: '12px 24px', borderRadius: '12px' }} onClick={() => showToast(t('Information request submitted. We will notify you when it is ready.'))}>
+                      {t('Request Download')}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button onClick={() => setPrivacyView('menu')} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Data Permissions')}</h3>
+                  </div>
+                  <div className="glass" style={{ padding: '24px', borderRadius: '20px' }}>
+                    <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{t('Manage how your data is used for personalized experiences and analytics.')}</p>
+                    <div style={{ marginTop: '24px' }}>
+                      <SwitchRow
+                        label={t('Personalized Ads')}
+                        checked={false}
+                        onToggle={() => showToast(t('Settings updated'))}
+                        disabled={saving}
+                      />
+                      <SwitchRow
+                        label={t('Data Analytics')}
+                        checked={true}
+                        onToggle={() => showToast(t('Settings updated'))}
+                        disabled={saving}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
           {activeSection === 'account-status' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <h3 style={{ margin: '0 0 6px', fontSize: '1.8rem' }}>{getSectionTitle('account-status')}</h3>
-              <div className="glass" style={{ padding: '24px', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px', marginBottom: '8px' }}>
-                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(0, 200, 83, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(0, 200, 83, 0.5)' }}>
-                  <Check size={32} color="#00c853" strokeWidth={3} />
-                </div>
-                <div>
-                  <p style={{ margin: '0 0 8px', fontSize: '1.4rem', fontWeight: 800 }}>{t('Your account is in good standing')}</p>
-                  <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{t('Thank you for following our Community Guidelines. You have no restrictions on your account.')}</p>
-                </div>
-              </div>
-              <SettingsNavCard title={t('Features you can access')} value={t('All')} onClick={() => showToast(t('No restricted features'))} />
-              <SettingsNavCard title={t('Monetization status')} value={t('Eligible')} onClick={() => showToast(t('Account is eligible'))} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              {accountStatusView === 'menu' ? (
+                <>
+                  <h3 style={{ margin: '0 0 6px', fontSize: '1.8rem' }}>{getSectionTitle('account-status')}</h3>
+                  <div className="glass" style={{ padding: '24px', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px', marginBottom: '8px' }}>
+                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(0, 200, 83, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(0, 200, 83, 0.5)' }}>
+                      <Check size={32} color="#00c853" strokeWidth={3} />
+                    </div>
+                    <div>
+                      <p style={{ margin: '0 0 8px', fontSize: '1.4rem', fontWeight: 800 }}>{t('Your account is in good standing')}</p>
+                      <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{t('Thank you for following our Community Guidelines. You have no restrictions on your account.')}</p>
+                    </div>
+                  </div>
+                  <SettingsNavCard title={t('Features you can access')} value={t('All')} onClick={() => setAccountStatusView('features')} />
+                  <SettingsNavCard title={t('Monetization status')} value={t('Eligible')} onClick={() => setAccountStatusView('monetization')} />
+                </>
+              ) : accountStatusView === 'features' ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button onClick={() => setAccountStatusView('menu')} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Features You Can Access')}</h3>
+                  </div>
+                  <div className="glass" style={{ padding: '24px', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{t('Your account currently has access to all standard and advanced features.')}</p>
+                    <ul style={{ color: 'white', lineHeight: 2, paddingLeft: '20px', margin: 0 }}>
+                      <li>{t('Posting Photos and Reels')}</li>
+                      <li>{t('Live Streaming')}</li>
+                      <li>{t('Direct Messaging')}</li>
+                      <li>{t('Commenting')}</li>
+                      <li>{t('Profile Customization')}</li>
+                    </ul>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button onClick={() => setAccountStatusView('menu')} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                      <ChevronLeft size={24} />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.8rem' }}>{t('Monetization Status')}</h3>
+                  </div>
+                  <div className="glass" style={{ padding: '24px', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Check size={24} color="#00c853" />
+                      <p style={{ margin: 0, fontWeight: 700, fontSize: '1.2rem', color: '#00c853' }}>{t('Eligible')}</p>
+                    </div>
+                    <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      {t('You are eligible to use monetization tools on CS-Star. If you violate our Partner Monetization Policies, your account may lose access to these tools.')}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

@@ -15,6 +15,7 @@ import Saved from './pages/Saved';
 import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
 import Settings from './pages/Settings';
+import YourActivity from './pages/YourActivity';
 import Layout from './components/Layout';
 import './index.css';
 
@@ -116,6 +117,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/activity" 
+            element={
+              <ProtectedRoute>
+                <YourActivity />
               </ProtectedRoute>
             } 
           />
