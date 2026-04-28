@@ -18,6 +18,7 @@ from notifications import router as notification_router
 from fastapi.staticfiles import StaticFiles
 from chat import router as chat_router
 from settings import router as settings_router
+from activity import router as activity_router
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -158,6 +159,7 @@ try:
     app.include_router(notification_router, prefix="/notifications")
     app.include_router(chat_router, prefix="/chat")
     app.include_router(settings_router, prefix="/settings")
+    app.include_router(activity_router, prefix="/activity")
     print("DEBUG: All routers included successfully.")
 except Exception as e:
     print(f"CRITICAL: Failed to include routers: {e}")
