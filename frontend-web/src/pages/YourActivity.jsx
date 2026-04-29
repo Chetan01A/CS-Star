@@ -585,13 +585,6 @@ function YourActivity() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
         <ActivityCard
-          icon={Clock}
-          title={t('Time Spent')}
-          description={t('See how much time you usually spend on CS-Star each day.')}
-          color="0, 149, 246"
-          onClick={() => setActiveTab('time-spent')}
-        />
-        <ActivityCard
           icon={Heart}
           title={t('Interactions')}
           description={t('Review and manage your likes, comments, and other interactions.')}
@@ -611,27 +604,6 @@ function YourActivity() {
           description={t('Review changes you\'ve made to your account since you created it.')}
           color="156, 39, 176"
           onClick={() => setActiveTab('account-history')}
-        />
-        <ActivityCard
-          icon={Link2}
-          title={t('Links you\'ve visited')}
-          description={t('See which links you\'ve visited recently.')}
-          color="255, 152, 0"
-          onClick={() => setActiveTab('links')}
-        />
-        <ActivityCard
-          icon={Archive}
-          title={t('Archived')}
-          description={t('View content you\'ve hidden from your profile.')}
-          color="158, 158, 158"
-          onClick={() => setActiveTab('archived')}
-        />
-        <ActivityCard
-          icon={Trash2}
-          title={t('Recently deleted')}
-          description={t('View and manage content you\'ve deleted recently.')}
-          color="244, 67, 54"
-          onClick={() => setActiveTab('deleted')}
         />
       </div>
 
