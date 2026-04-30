@@ -76,7 +76,7 @@ def ensure_users_schema():
         "website": "TEXT DEFAULT ''",
         "gender": "TEXT DEFAULT 'Prefer not to say'",
         "full_name": "TEXT DEFAULT ''",
-        "created_at": "DATETIME DEFAULT CURRENT_TIMESTAMP",
+        "created_at": "DATETIME",
     }
     with engine.begin() as connection:
         existing_columns = {
