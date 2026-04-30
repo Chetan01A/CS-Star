@@ -399,5 +399,7 @@ def get_me(current_user: User = Depends(get_current_user)):
         "is_verified": current_user.is_verified,
         "totp_enabled": current_user.totp_enabled,
         "profile_pic": current_user.profile_pic,
-        "bio": current_user.bio
+        "bio": current_user.bio,
+        "full_name": current_user.full_name,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None
     }

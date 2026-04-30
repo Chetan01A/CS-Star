@@ -570,6 +570,13 @@ function YourActivity() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    api.get('/auth/me')
+      .then(data => setProfile(data))
+      .catch(console.error);
+  }, []);
 
   const renderOverview = () => (
     <>
@@ -674,12 +681,22 @@ function YourActivity() {
     </div>
   );
 
-  const renderAccountHistory = () => (
+  const renderAccountHistory = () => {
+    const formatDate = (iso) => {
+      if (!iso) return 'Unknown';
+      return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    };
+
+    return (
     <div>
       <SubPageHeader title={t('Account history')} onBack={() => setActiveTab('overview')} />
       <div className="glass" style={{ padding: '24px', borderRadius: '24px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {[
+            { date: profile?.created_at ? formatDate(profile.created_at) : 'Today', action: 'Account created', desc: 'You created your account on CS-Star.' },
+            { date: 'Current', action: 'Email', desc: profile?.email || 'N/A' },
+            { date: 'Current', action: 'Name', desc: profile?.full_name || 'No name provided' },
+            { date: 'Current', action: 'Username', desc: profile?.username || 'N/A' },
             { date: 'Today', action: 'Bio updated', desc: 'You changed your bio.' },
             { date: 'Last week', action: 'Privacy changed', desc: 'You made your account private.' },
             { date: 'Last month', action: 'Password changed', desc: 'You successfully changed your password.' }
@@ -698,7 +715,8 @@ function YourActivity() {
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderLinks = () => (
     <div>

@@ -11,6 +11,8 @@ class User(Base):
     email = Column(String, unique=True)
     password = Column(String, nullable=True) # Nullable for OAuth
     google_id = Column(String, unique=True, nullable=True)
+    full_name = Column(String, default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # NEW PROFILE FIELDS
     bio = Column(String, default="")
