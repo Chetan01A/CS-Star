@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Home, Search, Bell, Send, Plus, 
-  User, LogOut, Heart, Compass, Menu, Settings, Activity, Bookmark, Palette, AlertCircle, Repeat2, PlaySquare
+  User, LogOut, Heart, Compass, Menu, Settings, Activity, Bookmark, Palette, AlertCircle, Repeat2, PlaySquare,
+  MessageCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
@@ -143,10 +144,10 @@ function Sidebar() {
   const menuItems = [
     { name: t('nav.home'), icon: <Home size={28} strokeWidth={2.1} />, path: '/' },
     { name: t('nav.reels'), icon: <PlaySquare size={28} strokeWidth={2.1} />, path: '/reels' },
-    { name: t('nav.messages'), icon: <Send size={28} strokeWidth={2.1} />, path: '/messages', badge: unreadMessages },
+    { name: t('nav.messages'), icon: <MessageCircle size={28} strokeWidth={2.1} />, path: '/messages', badge: unreadMessages },
     { name: t('nav.search'), icon: <Search size={28} strokeWidth={2.1} />, path: '/search' },
     { name: t('nav.explore'), icon: <Compass size={28} strokeWidth={2.1} />, path: '/explore' },
-    { name: t('nav.notifications'), icon: <Heart size={28} strokeWidth={2.1} />, path: '/notifications', badge: unseenCount },
+    { name: t('nav.notifications'), icon: <Bell size={28} strokeWidth={2.1} />, path: '/notifications', badge: unseenCount },
     { name: t('nav.create'), icon: <Plus size={28} strokeWidth={2.1} />, path: '/create' },
     { name: t('nav.profile'), icon: <User size={28} strokeWidth={2.1} />, path: '/profile/me' },
   ];
