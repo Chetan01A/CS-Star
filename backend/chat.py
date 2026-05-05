@@ -123,6 +123,40 @@ def get_messages(
         "next_before": next_before,
     }
 
+from pydantic import BaseModel
+
+class SendMessageRequest(BaseModel):
+    to: int
+    text: str = ""
+    message_type: str = "text"
+    media_url: str = None
+    replied_to_id: int = None
+
+@router.post("/send")
+async def send_message_rest(
+    req: SendMessageRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    msg = Message(
+        sender_id=current_user.id,
+        receiver_id=req.to,
+        text=req.text,
+        message_type=req.message_type,
+        media_url=req.media_url,
+        replied_to_id=req.replied_to_id
+    )
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+
+    # Broadcast via WebSocket if possible (optional but good)
+    # Since this is a REST endpoint, we can't easily access the live connections here
+    # without a global manager, but we'll at least save it to DB.
+    # In a real app, you'd use a Pub/Sub system (Redis) to notify WS workers.
+
+    return serialize_message(msg)
+
 
 @router.get("/contacts")
 def get_contacts(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

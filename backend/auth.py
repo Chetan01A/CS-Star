@@ -156,7 +156,6 @@ def signup(req: SignupRequest, request: Request, db: Session = Depends(get_db)):
 @limiter.limit("10/minute")
 def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     start_time = time.time()
-    print(f"DEBUG: Starting login attempt for {req.identifier}")
     # Look up the user by email OR username
     user = db.query(User).filter(
         or_(User.email == req.identifier, User.username == req.identifier)
@@ -365,11 +364,13 @@ def _as_utc_aware(value: datetime) -> datetime:
 @router.post("/refresh")
 @limiter.limit("5/minute")
 def refresh_token(req: RefreshTokenRequest, request: Request, db: Session = Depends(get_db)):
+    # LOGGING FIX 2026-04-30
     db_token = db.query(RefreshToken).filter(RefreshToken.token == req.refresh_token).first()
     
     if not db_token:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
         
+    # Ensure timezone awareness for comparison
     token_expiry = _as_utc_aware(db_token.expires_at)
     now_utc = datetime.now(timezone.utc)
         

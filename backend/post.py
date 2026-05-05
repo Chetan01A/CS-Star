@@ -247,6 +247,25 @@ def get_comments(post_id: int, db: Session = Depends(get_db)):
     return {"comments": result}
 
 
+@router.delete("/comment/{comment_id}")
+def delete_comment(comment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    comment = db.query(Comment).filter(Comment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    # Allow comment author OR post owner to delete
+    post = db.query(Post).filter(Post.id == comment.post_id).first()
+    if comment.user_id != current_user.id and post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
+
+    # Remove associated notifications
+    db.query(Notification).filter(Notification.comment_id == comment_id).delete(synchronize_session=False)
+
+    db.delete(comment)
+    db.commit()
+    return {"message": "Comment deleted"}
+
+
 @router.post("/share")
 def share_post(post_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     post = db.query(Post).filter(Post.id == post_id).first()

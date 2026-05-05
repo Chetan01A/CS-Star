@@ -103,6 +103,12 @@ export const api = {
     });
   },
 
+  delete(endpoint) {
+    return this.fetch(endpoint, {
+      method: 'DELETE',
+    });
+  },
+
   async upload(endpoint, formData, isRetry = false) {
     const fetchOptions = {
       method: 'POST',
