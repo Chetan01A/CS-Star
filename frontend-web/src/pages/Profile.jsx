@@ -1137,10 +1137,6 @@ function Profile() {
   const [showPhotoPanel, setShowPhotoPanel] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoHoverPosition, setPhotoHoverPosition] = useState({ x: 75, y: 75 });
-  const [showEditProfilePanel, setShowEditProfilePanel] = useState(false);
-  const [editUsername, setEditUsername] = useState('');
-  const [editBio, setEditBio] = useState('');
-  const [profileSaving, setProfileSaving] = useState(false);
   
   const navigate = useNavigate();
 
@@ -1155,12 +1151,6 @@ function Profile() {
     setSelectedReelId(null);
   }, [id, activeTab]);
 
-  useEffect(() => {
-    if (profile) {
-      setEditUsername(profile.username || '');
-      setEditBio(profile.bio || '');
-    }
-  }, [profile]);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -1320,28 +1310,6 @@ function Profile() {
     }
   };
 
-  const handleSaveProfile = async () => {
-    if (!profile) return;
-
-    setProfileSaving(true);
-    try {
-      const data = await api.put(`/profile/${profile.id}`, {
-        username: editUsername,
-        bio: editBio,
-        profile_pic: profile.profile_pic || '',
-      });
-      setProfile((prev) => ({
-        ...prev,
-        ...(data.profile || {}),
-      }));
-      setShowEditProfilePanel(false);
-    } catch (err) {
-      console.error(err);
-      alert(err.message || 'Could not update profile');
-    } finally {
-      setProfileSaving(false);
-    }
-  };
 
   if (loading) return <div style={{ padding: '100px', textAlign: 'center' }}><p>Loading profile...</p></div>;
   if (!profile) return <div style={{ padding: '100px', textAlign: 'center' }}><p>Profile not found.</p></div>;
@@ -1411,7 +1379,23 @@ function Profile() {
             </div>
 
             {isMe ? (
-              <button onClick={() => setShowEditProfilePanel(true)} className="glass" style={{ padding: '8px 20px', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '8px', fontWeight: '600' }}>
+              <button 
+                onClick={() => navigate('/settings')} 
+                style={{ 
+                  padding: '9px 22px', 
+                  borderRadius: '10px', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  fontWeight: '700',
+                  fontSize: '0.92rem',
+                  background: 'rgba(255, 255, 255, 0.12)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: 'white',
+                  transition: 'all 0.2s ease'
+                }}
+              >
                 <Edit3 size={18} /> Edit Profile
               </button>
             ) : (
@@ -1459,71 +1443,6 @@ function Profile() {
       </header>
 
       <AnimatePresence>
-        {showEditProfilePanel && isMe && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowEditProfilePanel(false)}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0, 0, 0, 0.72)',
-              backdropFilter: 'blur(8px)',
-              zIndex: 61,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px'
-            }}
-          >
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 20, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="glass"
-              style={{
-                width: 'min(520px, 100%)',
-                borderRadius: '28px',
-                border: '1px solid var(--card-border)',
-                padding: '28px'
-              }}
-            >
-              <h3 style={{ marginTop: 0, marginBottom: '18px' }}>Edit Profile</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <p style={{ margin: '0 0 8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Username</p>
-                  <input
-                    type="text"
-                    value={editUsername}
-                    onChange={(e) => setEditUsername(e.target.value)}
-                    className="input-field"
-                    placeholder="Enter username"
-                  />
-                </div>
-                <div>
-                  <p style={{ margin: '0 0 8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Bio</p>
-                  <textarea
-                    value={editBio}
-                    onChange={(e) => setEditBio(e.target.value)}
-                    className="input-field"
-                    placeholder="Write a short bio"
-                    style={{ minHeight: '120px', resize: 'none' }}
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '22px' }}>
-                <button onClick={() => setShowEditProfilePanel(false)} className="glass" style={{ padding: '10px 16px', borderRadius: '12px', cursor: 'pointer' }}>
-                  Cancel
-                </button>
-                <button onClick={handleSaveProfile} className="btn-primary" disabled={profileSaving}>
-                  {profileSaving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
 
         {showPhotoPanel && isMe && (
           <motion.div
