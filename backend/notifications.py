@@ -41,8 +41,12 @@ def get_notifications(db: Session = Depends(get_db), current_user: User = Depend
         Notification.recipient_id == current_user.id
     ).order_by(Notification.created_at.desc()).limit(50).all()
 
+    VIDEO_EXTENSIONS = ('.mp4', '.webm', '.mov', '.avi', '.mkv')
+
     result = []
     for n in notifications:
+        post_image_url = n.post.image_url if n.post else None
+        is_video = post_image_url and any(post_image_url.lower().endswith(ext) for ext in VIDEO_EXTENSIONS)
         result.append({
             "id": n.id,
             "type": n.type,
@@ -50,7 +54,10 @@ def get_notifications(db: Session = Depends(get_db), current_user: User = Depend
             "sender_username": n.sender.username,
             "sender_profile_pic": n.sender.profile_pic,
             "post_id": n.post_id,
-            "post_image": n.post.image_url if n.post else None,
+            "post_image": post_image_url,
+            "post_media_type": "video" if is_video else ("image" if post_image_url else None),
+            "post_user_id": n.post.user_id if n.post else None,
+            "post_caption": n.post.caption if n.post else None,
             "text": n.text,
             "is_seen": n.is_seen,
             "created_at": n.created_at

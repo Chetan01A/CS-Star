@@ -127,9 +127,14 @@ def following_count(user_id: int, db: Session = Depends(get_db)):
 
 @router.get("/status/{user_id}")
 def get_follow_status(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        return {"is_following": False}
+
     existing = db.query(Follow).filter(
         Follow.follower_id == current_user.id,
         Follow.following_id == user_id
     ).first()
+
     
     return {"is_following": existing is not None}

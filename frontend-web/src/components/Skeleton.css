@@ -1,0 +1,40 @@
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.skeleton-base {
+  background: #1a1a1a; /* Dark base color to match your theme */
+  background-image: linear-gradient(
+    to right,
+    #1a1a1a 0%,
+    #2a2a2a 20%,
+    #1a1a1a 40%,
+    #1a1a1a 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 800px 104px;
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer {
+  animation-duration: 1.5s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: infinite;
+  animation-name: shimmer;
+  animation-timing-function: linear;
+}
+
+.skeleton-base.circle {
+  border-radius: 50%;
+}
+
+.skeleton-base.text {
+  margin-bottom: 8px;
+}

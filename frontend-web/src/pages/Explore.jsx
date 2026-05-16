@@ -4,11 +4,15 @@ import { Heart, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { buildAssetUrl } from '../config';
+import PostModal from '../components/PostModal';
+
 
 function Explore() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPost, setSelectedPost] = useState(null);
   const navigate = useNavigate();
+
 
   useEffect(() => {
     fetchExplore();
@@ -50,7 +54,7 @@ function Explore() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.05 }}
                 whileHover={{ y: -5 }}
-                onClick={() => navigate(`/profile/${post.user_id || 'me'}`)} // Navigation for simple demo
+                onClick={() => setSelectedPost(post)}
                 style={{ 
                   aspectRatio: '1/1', 
                   position: 'relative', 
@@ -62,7 +66,7 @@ function Explore() {
               >
                 {post.media_type === 'video' ? (
                   <video
-                    src={`${API_BASE_URL}/${post.image_url}`}
+                    src={buildAssetUrl(post.image_url)}
                     muted
                     playsInline
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -109,6 +113,13 @@ function Explore() {
         <div className="glass" style={{ padding: '64px', textAlign: 'center' }}>
           <p>No discovery content available yet. Check back soon!</p>
         </div>
+      )}
+
+      {selectedPost && (
+        <PostModal 
+          post={selectedPost} 
+          onClose={() => setSelectedPost(null)} 
+        />
       )}
     </div>
   );

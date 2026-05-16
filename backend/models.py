@@ -32,6 +32,7 @@ class User(Base):
     comments = relationship("Comment", back_populates="author")
     notifications = relationship("Notification", foreign_keys="Notification.recipient_id", back_populates="recipient")
     settings = relationship("UserSettings", uselist=False, back_populates="user", cascade="all, delete-orphan")
+    stories = relationship("Story", back_populates="author", cascade="all, delete-orphan")
 
 class PendingSignup(Base):
     __tablename__ = "pending_signups"
@@ -117,6 +118,18 @@ class Comment(Base):
     post = relationship("Post", back_populates="comments")
     parent = relationship("Comment", remote_side=[id], back_populates="replies")
     replies = relationship("Comment", back_populates="parent", cascade="all, delete-orphan")
+
+class Story(Base):
+    __tablename__ = "stories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    media_url = Column(String)
+    media_type = Column(String, default="image")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    expires_at = Column(DateTime)
+
+    author = relationship("User", back_populates="stories")
 
 class Message(Base):
     __tablename__ = "messages"

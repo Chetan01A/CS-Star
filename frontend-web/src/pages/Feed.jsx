@@ -8,6 +8,10 @@ import PostModal from '../components/PostModal';
 import ReportModal from '../components/ReportModal';
 import ShareModal from '../components/ShareModal';
 import { buildAssetUrl } from '../config';
+import Skeleton from '../components/Skeleton';
+import StoryBar from '../components/StoryBar';
+import { useNotice } from '../context/NoticeContext';
+
 
 const toMediaUrl = (value) => {
   return buildAssetUrl(value);
@@ -55,6 +59,8 @@ const PostCard = ({ post, navigate }) => {
   const [showReport, setShowReport] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const menuRef = useRef(null);
+  const { showNotice } = useNotice();
+
 
   useEffect(() => {
     if (!showMenu) return;
@@ -123,8 +129,9 @@ const PostCard = ({ post, navigate }) => {
     if (action === 'copy_link') {
       const postUrl = `${window.location.origin}/profile/${post.user_id}`;
       navigator.clipboard.writeText(postUrl).then(() => {
-        alert('Post link copied');
+        showNotice('Post link copied', 'info');
       });
+
       return;
     }
 
@@ -311,9 +318,28 @@ function Feed() {
         <p style={{ color: 'var(--text-secondary)' }}>Catch up with your favorite creators.</p>
       </header>
 
+      <StoryBar />
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '48px' }}><p>Synchronizing with the network...</p></div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="glass" style={{ padding: '20px', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <Skeleton variant="circle" width="40px" height="40px" />
+                  <Skeleton variant="text" width="120px" height="18px" />
+                </div>
+                <Skeleton variant="rect" width="100%" height="400px" style={{ marginBottom: '16px' }} />
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                  <Skeleton variant="circle" width="24px" height="24px" />
+                  <Skeleton variant="circle" width="24px" height="24px" />
+                  <Skeleton variant="circle" width="24px" height="24px" />
+                </div>
+                <Skeleton variant="text" width="60%" height="14px" />
+                <Skeleton variant="text" width="40%" height="14px" />
+              </div>
+            ))}
+          </div>
         ) : feed.length === 0 ? (
           <motion.div 
             initial={{ opacity: 0 }}

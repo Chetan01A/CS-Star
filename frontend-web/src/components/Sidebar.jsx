@@ -8,6 +8,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
 import { useLanguage } from '../context/LanguageContext';
+import { useNotice } from '../context/NoticeContext';
+
 
 function Sidebar() {
   const [unseenCount, setUnseenCount] = useState(0);
@@ -18,6 +20,8 @@ function Sidebar() {
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { showNotice } = useNotice();
+
 
   useEffect(() => {
     // Load initial appearance
@@ -75,8 +79,10 @@ function Sidebar() {
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    showNotice("Logged out successfully", "info");
     navigate('/login');
   };
+
 
   const submitReport = async () => {
     if (!reportText.trim()) return;
@@ -138,8 +144,9 @@ function Sidebar() {
     }
 
     setShowMoreMenu(false);
-    alert(`${action} will be available here.`);
+    showNotice(`${action} will be available soon.`, "info");
   };
+
 
   const menuItems = [
     { name: t('nav.home'), icon: <Home size={28} strokeWidth={2.1} />, path: '/' },
@@ -153,20 +160,20 @@ function Sidebar() {
   ];
 
   return (
-    <div style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: '280px', zIndex: 1000 }}>
-      <div className="sidebar-shell" style={{
+    <div className="app-sidebar-frame" style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: '280px', zIndex: 1000 }}>
+      <div className="sidebar-shell app-sidebar-shell" style={{
         width: '280px', height: '100vh', position: 'absolute',
         left: 0, top: 0, display: 'flex', flexDirection: 'column',
         padding: '18px 14px 18px', background: 'transparent',
         zIndex: 1000, overflow: 'visible', transition: 'width 0.22s ease'
       }}>
-        <div style={{ height: '32px', marginBottom: '46px', display: 'flex', alignItems: 'center', overflow: 'visible', paddingLeft: '8px' }}>
-          <h1 className="gradient-text" style={{ fontSize: '2rem', fontWeight: '900', letterSpacing: '-1.5px', whiteSpace: 'nowrap' }}>
+        <div className="app-sidebar-brand" style={{ height: '32px', marginBottom: '46px', display: 'flex', alignItems: 'center', overflow: 'visible', paddingLeft: '8px' }}>
+          <h1 className="gradient-text app-sidebar-logo" style={{ fontSize: '2rem', fontWeight: '900', letterSpacing: '-1.5px', whiteSpace: 'nowrap' }}>
             CS-Star
           </h1>
         </div>
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+        <nav className="app-sidebar-nav" style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
           {menuItems.map((item) => (
             <NavLink
               key={item.name}
@@ -181,12 +188,12 @@ function Sidebar() {
                 boxShadow: isActive ? '0 8px 24px rgba(0,0,0,0.18)' : '0 6px 18px rgba(0,0,0,0.12)',
                 whiteSpace: 'nowrap'
               })}
-              className="sidebar-item"
+              className="sidebar-item app-sidebar-link"
             >
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} style={{ display: 'flex', alignItems: 'center' }}>
+              <motion.div className="app-sidebar-icon" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} style={{ display: 'flex', alignItems: 'center' }}>
                 {item.icon}
               </motion.div>
-              <span style={{ fontSize: '0.98rem' }}>{item.name}</span>
+              <span className="app-sidebar-label" style={{ fontSize: '0.98rem' }}>{item.name}</span>
               <AnimatePresence>
                 {item.badge > 0 && (
                   <motion.div
@@ -206,10 +213,10 @@ function Sidebar() {
           ))}
         </nav>
 
-        <div style={{ position: 'relative', marginTop: 'auto', paddingTop: '10px' }}>
+        <div className="app-sidebar-more-wrap" style={{ position: 'relative', marginTop: 'auto', paddingTop: '10px' }}>
           <button 
             onClick={(e) => { e.stopPropagation(); setShowMoreMenu((prev) => !prev); }}
-            className="sidebar-item"
+            className="sidebar-item app-sidebar-link app-sidebar-more"
             style={{
               display: 'flex', alignItems: 'center', gap: '18px', padding: '14px 14px', borderRadius: '16px',
               color: 'white', background: 'rgba(14, 20, 28, 0.42)', backdropFilter: 'blur(10px)',
@@ -219,14 +226,14 @@ function Sidebar() {
             }}
           >
             <Menu size={28} strokeWidth={2.1} />
-            <span style={{ fontSize: '0.98rem' }}>{t('nav.more')}</span>
+            <span className="app-sidebar-label" style={{ fontSize: '0.98rem' }}>{t('nav.more')}</span>
           </button>
 
           <AnimatePresence>
             {showMoreMenu && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
-                className="glass"
+                className="glass app-more-menu"
                 style={{
                   position: 'fixed', left: '18px', bottom: '86px', width: '260px',
                   borderRadius: '24px', padding: '12px', 

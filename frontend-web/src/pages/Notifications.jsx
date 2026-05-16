@@ -5,10 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { buildAssetUrl } from '../config';
 import { useLanguage } from '../context/LanguageContext';
+import PostModal from '../components/PostModal';
 
 function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPost, setSelectedPost] = useState(null); // post object for PostModal
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -47,13 +49,30 @@ function Notifications() {
   };
 
   const handleNotificationClick = (notification) => {
+    // Follow → go to the sender's profile
     if (notification.type === 'follow' && notification.sender_id) {
       navigate(`/profile/${notification.sender_id}`);
       return;
     }
 
     if (notification.post_id) {
-      navigate('/');
+      if (notification.post_media_type === 'video') {
+        // Video post → open in Reels with the specific reel pre-scrolled
+        navigate(`/reels?post=${notification.post_id}`);
+      } else {
+        // Image post → open PostModal inline
+        setSelectedPost({
+          post_id: notification.post_id,
+          image_url: notification.post_image,
+          media_type: notification.post_media_type || 'image',
+          user_id: notification.post_user_id,
+          caption: notification.post_caption,
+          username: notification.sender_username,
+          profile_pic: notification.sender_profile_pic,
+          likes_count: 0,
+          is_liked: false,
+        });
+      }
     }
   };
 
@@ -143,17 +162,34 @@ function Notifications() {
                   </div>
 
                   {n.post_image && (
-                    <img 
-                      src={buildAssetUrl(n.post_image)} 
-                      alt="post"
-                      style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', opacity: 0.8 }}
-                    />
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <img 
+                        src={buildAssetUrl(n.post_image)} 
+                        alt="post"
+                        style={{ width: '56px', height: '56px', borderRadius: '10px', objectFit: 'cover', opacity: 0.85 }}
+                      />
+                      {n.post_media_type === 'video' && (
+                        <div style={{
+                          position: 'absolute', inset: 0, display: 'flex',
+                          alignItems: 'center', justifyContent: 'center',
+                          background: 'rgba(0,0,0,0.35)', borderRadius: '10px'
+                        }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                            <polygon points="5,3 19,12 5,21" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </motion.div>
               ))
             )}
           </AnimatePresence>
         </div>
+      )}
+
+      {selectedPost && (
+        <PostModal post={selectedPost} onClose={() => setSelectedPost(null)} />
       )}
     </div>
   );

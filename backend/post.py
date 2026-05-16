@@ -134,6 +134,17 @@ def get_user_posts(user_id: int, db: Session = Depends(get_db), current_user: Us
         }
     }
 
+@router.get("/{post_id}")
+def get_single_post(post_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    post = db.query(Post).options(
+        joinedload(Post.author),
+        joinedload(Post.likes),
+        joinedload(Post.comments)
+    ).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return {"post": serialize_post(post, current_user.id)}
+
 # Like post
 @router.post("/like")
 def like_post(post_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

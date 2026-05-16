@@ -1,11 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api';
-import { Heart, MessageCircle, Send, MoreHorizontal, Volume2, VolumeX, X, Play } from 'lucide-react';
+import { Heart, MessageCircle, Send, MoreHorizontal, Volume2, VolumeX, X, Play, Trash2, AlertCircle } from 'lucide-react';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { isItemSaved, saveItemToCollection } from '../utils/saved';
 import SavePopover from '../components/SavePopover';
 import { buildAssetUrl, API_BASE_URL } from '../config';
+import { useNotice } from '../context/NoticeContext';
+import ShareModal from '../components/ShareModal';
+
 
 const toMediaUrl = (value) => {
   return buildAssetUrl(value);
@@ -32,10 +36,16 @@ function Reels() {
   const [commentsArrowY, setCommentsArrowY] = useState(220);
   const [menuPanelTop, setMenuPanelTop] = useState(null);
   const [menuPanelLeft, setMenuPanelLeft] = useState(null);
+  const [activeCommentMenu, setActiveCommentMenu] = useState(null); // comment.id
   const [saveNotice, setSaveNotice] = useState('');
-  const videoRefs = useRef({});
+  const [sharePost, setSharePost] = useState(null); // post to share in ShareModal
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { showNotice } = useNotice();
+  const videoRefs = useRef({});
+
+
   const selectedPostId = Number(searchParams.get('post'));
 
   useEffect(() => {
@@ -251,14 +261,25 @@ function Reels() {
     }
   };
 
-  const handleShare = async (post) => {
-    const postUrl = `${window.location.origin}/reels?post=${post.post_id}`;
+  const deleteComment = async (commentId, postId) => {
+    if (!window.confirm('Delete this comment?')) return;
     try {
-      await navigator.clipboard.writeText(postUrl);
-      alert('Reel link copied');
-    } catch (err) {
-      console.error(err);
-    }
+      await api.delete(`/post/comment/${commentId}`);
+      setCommentsByPost(prev => ({
+        ...prev,
+        [postId]: (prev[postId] || []).filter(c => c.id !== commentId)
+      }));
+      setReels(prev => prev.map(item => 
+        item.post_id === postId 
+          ? { ...item, comments_count: Math.max(0, (item.comments_count || 0) - 1) }
+          : item
+      ));
+      setActiveCommentMenu(null);
+    } catch (err) { console.error(err); }
+  };
+
+  const handleShare = (post) => {
+    setSharePost(post);
   };
 
   const handleSavedNotice = (message, postId, isNowSaved = true) => {
@@ -511,7 +532,47 @@ function Reels() {
                   ) : (
                     (commentsByPost[activeCommentsPost.post_id] || []).map((comment) => (
                       <div key={comment.id} className="reel-comment-item">
-                        <strong>{comment.username}</strong> <span>{comment.text}</span>
+                        <div className="reel-comment-main">
+                          <strong>{comment.username}</strong> <span>{comment.text}</span>
+                        </div>
+                        
+                        <div style={{ position: 'relative' }}>
+                          <button 
+                            type="button" 
+                            className="reel-comment-dots"
+                            onClick={() => setActiveCommentMenu(activeCommentMenu === comment.id ? null : comment.id)}
+                          >
+                            <MoreHorizontal size={16} />
+                          </button>
+                          
+                          <AnimatePresence>
+                            {activeCommentMenu === comment.id && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 5 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 5 }}
+                                className="reel-comment-menu"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {currentUserId === comment.user_id ? (
+                                  <button 
+                                    onClick={() => deleteComment(comment.id, activeCommentsPost.post_id)} 
+                                    className="danger"
+                                  >
+                                    <Trash2 size={13} /> Delete
+                                  </button>
+                                ) : (
+                                  <button 
+                                    onClick={() => { showNotice('Report submitted', 'success'); setActiveCommentMenu(null); }}
+                                  >
+                                    <AlertCircle size={13} /> Report
+                                  </button>
+                                )}
+
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
                     ))
                   )}
@@ -554,7 +615,7 @@ function Reels() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button type="button" onClick={() => { handleShare(activeMenuPost); setMenuPostId(null); }}>Copy link</button>
+            <button type="button" onClick={() => { const url = `${window.location.origin}/reels?post=${activeMenuPost.post_id}`; navigator.clipboard.writeText(url).then(() => showNotice('Reel link copied', 'info')); setMenuPostId(null); }}>Copy link</button>
             <button type="button" onClick={() => { saveItemToCollection(activeMenuPost, 'default'); handleSavedNotice('Post was saved', activeMenuPost.post_id); setMenuPostId(null); }}>
               Save
             </button>
@@ -562,6 +623,19 @@ function Reels() {
             <button type="button" onClick={() => { alert('Report submitted'); setMenuPostId(null); }} className="danger">Report</button>
           </div>
         </div>
+      )}
+
+      {sharePost && (
+        <ShareModal
+          post={{
+            post_id: sharePost.post_id,
+            image_url: sharePost.image_url,
+            post_image_url: sharePost.image_url,
+            caption: sharePost.caption,
+            username: sharePost.username,
+          }}
+          onClose={() => setSharePost(null)}
+        />
       )}
 
       {saveNotice && (

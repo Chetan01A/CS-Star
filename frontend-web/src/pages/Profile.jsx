@@ -5,6 +5,10 @@ import { api } from '../api';
 import { Edit3, Grid, ShieldCheck, ShieldAlert, UserPlus, UserMinus, Clapperboard, Heart, MessageCircle, Send, X, MoreHorizontal, Pin, BarChart3, Trash2, EyeOff, Download, MessageSquareOff, Pencil, Bookmark, CircleHelp, Expand, ThumbsUp, ThumbsDown, SlidersHorizontal, Flag, PlaySquare, Camera, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { buildAssetUrl, API_BASE_URL } from '../config';
+import Skeleton from '../components/Skeleton';
+import { useNotice } from '../context/NoticeContext';
+import PostModal from '../components/PostModal';
+
 
 const formatCount = (count, singular, plural = `${singular}s`) => `${count} ${count === 1 ? singular : plural}`;
 
@@ -232,10 +236,11 @@ const ProfileReelsModal = ({ reels, selectedReelId, profile, isFollowing, onClos
       const nextShareCount = (reel.share_count || 0) + 1;
       onUpdatePost(reel.post_id, { share_count: nextShareCount });
       await navigator.clipboard.writeText(`${window.location.origin}/profile/${reel.user_id}`);
-      alert('Reel link copied');
+      showNotice("Reel link copied", "info");
     } catch (err) {
       console.error(err);
     }
+
   };
 
   const handleNextReel = async () => {
@@ -546,10 +551,11 @@ const ProfilePostModal = ({ post, profile, onClose, onUpdatePost, onDeletePost, 
       setShareCount(nextShareCount);
       syncPost({ share_count: nextShareCount });
       await navigator.clipboard.writeText(`${window.location.origin}/profile/${post.user_id}`);
-      alert('Profile link copied to clipboard!');
+      showNotice("Profile link copied to clipboard!", "info");
     } catch (err) {
       console.error(err);
     }
+
   };
 
   const handleAddComment = async (e) => {
@@ -645,9 +651,10 @@ const ProfilePostModal = ({ post, profile, onClose, onUpdatePost, onDeletePost, 
   };
 
   const handleViewInsights = () => {
-    alert(`Insights\nLikes: ${likesCount}\nComments: ${commentsCount}\nShares: ${shareCount}`);
+    showNotice(`Insights: ${likesCount} Likes, ${commentsCount} Comments, ${shareCount} Shares`, "info");
     setShowMenu(false);
   };
+
 
   const handleViewerAction = async (action) => {
     setShowMenu(false);
@@ -1139,6 +1146,8 @@ function Profile() {
   const [photoHoverPosition, setPhotoHoverPosition] = useState({ x: 75, y: 75 });
   
   const navigate = useNavigate();
+  const { showNotice } = useNotice();
+
 
   const isMe = id === 'me';
 
@@ -1271,10 +1280,11 @@ function Profile() {
       await api.post('/auth/2fa/verify', { code: twoFactorCode });
       setShow2FAPanel(false);
       fetchProfile();
-      alert("2FA Enabled successfully!");
+      showNotice("2FA Enabled successfully!", "success");
     } catch (err) {
       setTwoFactorError(err.message);
     }
+
   };
 
   const handleProfilePhotoUpload = async (event) => {
@@ -1288,10 +1298,12 @@ function Profile() {
       const data = await api.upload(`/profile/${profile.id}/photo`, formData);
       setProfile((prev) => ({ ...prev, profile_pic: data.profile_pic }));
       setShowPhotoPanel(false);
+      showNotice("Profile photo updated", "success");
     } catch (err) {
       console.error(err);
-      alert(err.message || 'Could not upload profile photo');
+      showNotice(err.message || 'Could not upload profile photo', "error");
     } finally {
+
       setPhotoUploading(false);
       event.target.value = '';
     }
@@ -1311,7 +1323,31 @@ function Profile() {
   };
 
 
-  if (loading) return <div style={{ padding: '100px', textAlign: 'center' }}><p>Loading profile...</p></div>;
+  if (loading) {
+    return (
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '64px 24px' }}>
+        <header style={{ display: 'flex', alignItems: 'center', gap: '48px', marginBottom: '64px' }}>
+          <Skeleton variant="circle" width="150px" height="150px" />
+          <div style={{ flex: 1 }}>
+            <Skeleton variant="text" width="200px" height="32px" style={{ marginBottom: '16px' }} />
+            <Skeleton variant="text" width="150px" height="18px" style={{ marginBottom: '24px' }} />
+            <div style={{ display: 'flex', gap: '40px', marginBottom: '24px' }}>
+              <Skeleton variant="text" width="60px" height="24px" />
+              <Skeleton variant="text" width="60px" height="24px" />
+              <Skeleton variant="text" width="60px" height="24px" />
+            </div>
+            <Skeleton variant="text" width="100%" height="16px" />
+            <Skeleton variant="text" width="80%" height="16px" />
+          </div>
+        </header>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px' }}>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+            <Skeleton key={i} variant="rect" width="100%" style={{ aspectRatio: '1/1' }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (!profile) return <div style={{ padding: '100px', textAlign: 'center' }}><p>Profile not found.</p></div>;
 
   return (

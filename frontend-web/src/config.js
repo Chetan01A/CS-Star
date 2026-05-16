@@ -4,6 +4,16 @@ export const WS_BASE_URL = (import.meta.env.VITE_WS_URL || (import.meta.env.DEV 
 
 export const buildAssetUrl = (value) => {
   if (!value) return '';
-  if (value.startsWith('http://') || value.startsWith('https://')) return value;
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    try {
+      const parsed = new URL(value);
+      if (import.meta.env.DEV && parsed.hostname === 'cs-star-1.onrender.com') {
+        return `${API_BASE_URL}${parsed.pathname}${parsed.search}`;
+      }
+    } catch {
+      return value;
+    }
+    return value;
+  }
   return `${API_BASE_URL}/${value.replace(/^\/+/, '')}`;
 };

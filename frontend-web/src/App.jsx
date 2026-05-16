@@ -16,6 +16,7 @@ import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
 import Settings from './pages/Settings';
 import YourActivity from './pages/YourActivity';
+import PostView from './pages/PostView';
 import Layout from './components/Layout';
 import './index.css';
 
@@ -125,6 +126,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <YourActivity />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/post/:id" 
+            element={
+              <ProtectedRoute>
+                <PostView />
               </ProtectedRoute>
             } 
           />

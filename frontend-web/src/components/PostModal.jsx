@@ -8,6 +8,8 @@ import { buildAssetUrl } from '../config';
 import ReportModal from './ReportModal';
 import EmojiPicker from './EmojiPicker';
 import ShareModal from './ShareModal';
+import { useNotice } from '../context/NoticeContext';
+
 
 const PostModal = ({ post, onClose }) => {
   const [comments, setComments] = useState([]);
@@ -26,6 +28,8 @@ const PostModal = ({ post, onClose }) => {
   const optionsRef = useRef(null);
   const commentInputRef = useRef(null);
   const navigate = useNavigate();
+  const { showNotice } = useNotice();
+
 
   useEffect(() => {
     // Fetch current user for delete/report permissions
@@ -111,10 +115,11 @@ const PostModal = ({ post, onClose }) => {
   const copyPostLink = () => {
     const url = `${window.location.origin}/profile/${post.user_id}`;
     navigator.clipboard.writeText(url).then(() => {
-      alert('Link copied to clipboard!');
+      showNotice('Link copied to clipboard!', 'info');
       setShowOptions(false);
     });
   };
+
 
   const mediaUrl = buildAssetUrl(post.image_url || post.post_image_url);
   const isNarrow = window.innerWidth < 1000;

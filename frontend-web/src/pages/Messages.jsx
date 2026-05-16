@@ -1,131 +1,47 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api';
-import { buildAssetUrl, WS_BASE_URL } from '../config';
+import { WS_BASE_URL } from '../config';
 import { useLanguage } from '../context/LanguageContext';
-import { Send, User as UserIcon, MessageCircle, Search, MoreHorizontal, Phone, PhoneOff, Video, VideoOff, CornerUpLeft, Smile, MoreVertical, Check, CheckCheck, X, Image as ImageIcon, Mic, MicOff, Volume2, RefreshCcw, Gauge, AlertTriangle, Minimize2, Maximize2 } from 'lucide-react';
-/* eslint-disable react-hooks/exhaustive-deps */
-// eslint-disable-next-line no-unused-vars
+import { useNotice } from '../context/NoticeContext';
+
+import { ArrowLeft, MessageCircle, X, Phone, Video, MoreHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const EMOJI_CATEGORIES = {
-  "Smileys": ["😃", "😄", "😁", "😆", "😅", "😂", "🤣", "☺️", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🤭", "🤫", "🤥", "😶", "😐", "😑", "😬", "🙄", "😯", "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "🤑", "🤠"],
-  "Animals": ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐻‍❄️", "🐨", "🐯", "🦁", "🐮", "🐷", "🐽", "🐸", "🐵", "🙊", "🐒", "🐔", "🐧", "🐦", "🐤", "🐣", "🐥", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🪱", "🐛", "🦋", "🐌", "🐞", "🐜", "🦟", "🦗", "🕷️", "🕸️", "🦂", "🐢", "🐍", "🦎", "🦖", "🦕", "🐙", "🦑", "🦐", "🦞", "🦀", "🐡", "🐠", "🐟", "🐬", "🐳", "🐋", "🦈", "🐊", "🐅", "🐆", "🦓", "🦍", "🦧", "🐘", "🦛", "🦏", "🐪", "🐫", "🦒", "🦘", "🦬", "🐃", "🐂", "🐄", "🐎", "🐖", "🐏", "🐑", "🐐", "🦌", "🐕", "🐩", "🦮", "🐕‍🦺", "🐈", "🐈‍⬛", "🐓", "🦃", "🦚", "🦜", "🦢", "🦩", "🕊️", "🐇", "🦝", "🦨", "🦡", "🦫", "🦦", "🦥", "🐁", "🐀", "🐿️", "🦔"],
-  "Food": ["🍏", "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", "🥑", "🥦", "🥬", "🥒", "🌶️", "🌽", "🥕", "🧄", "🧅", "🥔", "🍠", "🥐", "🥯", "🍞", "🥖", "🥨", "🧀", "🥚", "🍳", "🧈", "🥞", "🧇", "🥓", "🥩", "🍗", "🍖", "🦴", "🌭", "🍔", "🍟", "🍕", "🫓", "🥪", "🥙", "🧆", "🌮", "🌯", "🫔", "🥗", "🥘", "🫕", "🥣", "🍝", "🍜", "🍲", "🍛", "🍣", "🍱", "🥟", "🍤", "🍙", "🍚", "🍘", "🍥", "🥠", "🥮", "🍢", "🍡", "🍧", "🍨", "🍦", "🥧", "🧁", "🍰", "🎂", "🍮", "🍭", "🍬", "🍫", "🍿", "🍩", "🍪", "🌰", "🥜", "🍯", "🥛", "☕", "🫖", "🍵", "🍶", "🍾", "🍷", "🍸", "🍹", "🍺", "🍻", "🥂", "🥃", "🥤", "🧋", "🧃", "🧉", "🧊"],
-  "Activities": ["⚽", "🏀", "🏈", "⚾", "🥎", "🎾", "🏐", "🏉", "🥏", "🎱", "🪀", "🏓", "🏸", "🏒", "🏑", "🥍", "🏏", "🪃", "🥅", "⛳", "🪁", "🏹", "🎣", "🤿", "🥊", "🥋", "🎽", "🛹", "🛼", "🛷", "⛸️", " curling_stone", "🎿", "⛷️", "🏂", "🪂", "🏋️", "🤼", "🤸", "⛹️", "🤺", "🤾", "🏌️", "🏇", "🧘", "🏄", "🏊", "🤽", "🚣", "🧗", "🚵", "🚴", "🏆", "🥇", "🥈", "🥉", "🏅", "🎖️", "🏵️", "🎫", "🎟️", "🎭", "🎨", "🎬", "🎤", "🎧", "🎼", "🎹", "🥁", "🪘", "🎷", "🎺", "🎸", "🪕", "🎻", "🎲", "♟️", "🎯", "🎳", "🎮", "🎰", "🧩"],
-  "Travel": ["🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚒", "🚐", "🛻", "🚚", "🚛", "🚜", "🏎️", "🏍️", "🛵", "🦽", "🦼", "🛺", "🚲", "🛴", "🛹", "🚏", "🛣️", "🛤️", "🛢️", "⛽", "🚨", "🚥", "🚦", "🛑", "🚧", "⚓", "⛵", "🛶", "🚤", "🛳️", "⛴️", "🛥️", "🚢", "✈️", "🛩️", "🛫", "🛬", "🪂", "💺", "🚁", "🚟", "🚠", " cable_car", "🛰️", "🚀", "🛸", "🪐", "🌠", "🌌", "⛱️", "🎆", "🎇", "🎑", "🏙️", "🌆", "🌇", "🌃", "🌉", "🌌", "🏞️", "🌅", "🌄"]
-};
+// Modular components
+import Avatar from '../components/Messages/Avatar';
+import ConversationList from '../components/Messages/ConversationList';
+import MessageList from '../components/Messages/MessageList';
+import MessageInput from '../components/Messages/MessageInput';
+import CallOverlay from '../components/Messages/CallOverlay';
 
-const GROUP_WINDOW_MS = 5 * 60 * 1000;
+// Utils and constants
+import { 
+  toDate, 
+  isSameDay, 
+  getDateSeparatorLabel, 
+  getMessageKey, 
+  normalizeMessage, 
+  sameId, 
+  getSystemCallNotice,
+  formatTime,
+  formatConversationTime
+} from '../components/Messages/utils';
+import { 
+  EMOJI_CATEGORIES, 
+  GROUP_WINDOW_MS, 
+  CALL_STATE, 
+  RTC_CONFIGURATION 
+} from '../components/Messages/constants';
 
-const toDate = (timestamp) => {
-  const date = new Date(timestamp);
-  return Number.isNaN(date.getTime()) ? null : date;
-};
+/* eslint-disable react-hooks/exhaustive-deps */
 
-const isSameDay = (aTs, bTs) => {
-  const a = toDate(aTs);
-  const b = toDate(bTs);
-  if (!a || !b) return false;
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-};
 
-const getDateSeparatorLabel = (timestamp) => {
-  const date = toDate(timestamp);
-  if (!date) return 'Unknown date';
-
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffDays = Math.round((todayStart - dateStart) / (24 * 60 * 60 * 1000));
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-};
-
-const getMessageKey = (message, index) => message.id || message.client_id || `${message.from || 'unknown'}-${message.time || 'no-time'}-${index}`;
-
-const normalizeMessage = (message, currentUserId) => {
-  const isMine = message.from === currentUserId;
-  let deliveryStatus = message.deliveryStatus;
-  if (!deliveryStatus && isMine) {
-    deliveryStatus = message.is_read ? 'read' : 'sent';
-  }
-  if (!deliveryStatus && !isMine) {
-    deliveryStatus = 'received';
-  }
-
-  return {
-    ...message,
-    message_type: message.message_type || 'text',
-    deliveryStatus,
-  };
-};
-
-const sameId = (a, b) => String(a) === String(b);
-
-const getCallModeLabel = (mode) => (mode === 'video' ? 'Video' : 'Audio');
-
-const getCallModeArticle = (mode) => (mode === 'audio' ? 'an' : 'a');
-
-const getSystemCallNotice = (message, currentUserId, activeUsername, previousMessages = []) => {
-  if (message.message_type !== 'system') return null;
-
-  const text = (message.text || '').trim();
-  const startedMatch = text.match(/started a[n]?\s+(audio|video)\s+call/i);
-  if (startedMatch) {
-    const mode = startedMatch[1].toLowerCase();
-    const actor = sameId(message.from, currentUserId) ? 'You' : (activeUsername || 'They');
-    return {
-      show: true,
-      text: `${actor} started ${getCallModeArticle(mode)} ${mode} call`,
-    };
-  }
-
-  if (/call ended/i.test(text)) {
-    const previousStartedMessage = [...previousMessages].reverse().find((entry) =>
-      entry?.message_type === 'system' && /started a[n]?\s+(audio|video)\s+call/i.test(entry.text || '')
-    );
-    const previousStartedMatch = previousStartedMessage?.text?.match(/started a[n]?\s+(audio|video)\s+call/i);
-    const mode = previousStartedMatch?.[1]?.toLowerCase();
-    return {
-      show: true,
-      text: mode ? `${getCallModeLabel(mode)} call ended` : 'Call ended',
-    };
-  }
-
-  return { show: false, text: '' };
-};
-
-const CALL_STATE = {
-  IDLE: 'idle',
-  DIALING: 'dialing',
-  RINGING: 'ringing',
-  CONNECTING: 'connecting',
-  ACTIVE: 'active',
-  ENDED: 'ended',
-  FAILED: 'failed',
-};
-
-const RTC_CONFIGURATION = (() => {
-  const iceServers = [
-    { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
-  ];
-
-  const turnUrl = import.meta.env.VITE_TURN_URL;
-  const turnUsername = import.meta.env.VITE_TURN_USERNAME;
-  const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL;
-  if (turnUrl && turnUsername && turnCredential) {
-    iceServers.push({
-      urls: [turnUrl],
-      username: turnUsername,
-      credential: turnCredential,
-    });
-  }
-  return { iceServers };
-})();
 
 function Messages() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const activeChatId = searchParams.get('chat');
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [activeUser, setActiveUser] = useState(null);
@@ -148,6 +64,16 @@ function Messages() {
   const [, setIsUploading] = useState(false);
   const [emojiSearch, setEmojiSearch] = useState('');
   const { t } = useLanguage();
+  const { showNotice } = useNotice();
+
+  const selectConversation = (user, options = {}) => {
+    if (!user) return;
+    const params = new URLSearchParams(searchParams);
+    params.set('chat', user.id);
+    setActiveUser(user);
+    navigate({ pathname: '/messages', search: `?${params.toString()}` }, { replace: Boolean(options.replace) });
+  };
+
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [, setAudioChunks] = useState([]);
@@ -176,6 +102,7 @@ function Messages() {
   const [connectionStatus, setConnectionStatus] = useState('connected');
   const [connectionNotice, setConnectionNotice] = useState('');
   const [showConnectionNotice, setShowConnectionNotice] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
 
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -205,6 +132,10 @@ function Messages() {
   const incomingCallDataRef = useRef(incomingCallData);
   const callModeRef = useRef(callMode);
   const callSessionIdRef = useRef(callSessionId);
+
+  const isPhoneViewport = viewportWidth <= 720;
+  const isTabletViewport = viewportWidth > 720 && viewportWidth <= 1100;
+  const showConversationPane = !isPhoneViewport || !activeUser;
 
   const clearAckTimeout = (clientId) => {
     const timeoutId = pendingAckTimeoutsRef.current.get(clientId);
@@ -633,6 +564,12 @@ function Messages() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setupOutputDevice();
@@ -710,7 +647,7 @@ function Messages() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (callMode === 'video' && selectedVideoInputId && (callState === CALL_STATE.ACTIVE || callState === CALL_STATE.CONNECTING)) {
-      switchCamera(selectedVideoInputId).catch?.(() => {});
+      switchCamera(selectedVideoInputId).catch(() => {});
     }
   }, [selectedVideoInputId]);
 
@@ -752,6 +689,21 @@ function Messages() {
       console.error(err);
     }
   };
+
+  useEffect(() => {
+    if (!conversations.length) return;
+
+    if (!activeChatId) {
+      setActiveUser(null);
+      setMessages([]);
+      return;
+    }
+
+    const chatFromUrl = conversations.find((user) => sameId(user.id, activeChatId));
+    if (chatFromUrl && !sameId(activeUser?.id, chatFromUrl.id)) {
+      setActiveUser(chatFromUrl);
+    }
+  }, [activeChatId, conversations, activeUser?.id]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -852,12 +804,13 @@ function Messages() {
       if (data.type === 'init_online') {
         if (!opened) {
           opened = true;
-          showNotice(
+          showConnectionStatus(
             reconnectAttemptRef.current > 0 ? 'Reconnected to chat' : '',
             'connected',
             reconnectAttemptRef.current > 0 ? 2500 : 0
           );
         }
+
         reconnectAttemptRef.current = 0;
         setIsReconnectingSocket(false);
         setOnlineUsers(new Set(data.users));
@@ -1087,10 +1040,11 @@ function Messages() {
       opened = true;
       setIsReconnectingSocket(false);
       if (reconnectAttemptRef.current > 0) {
-        showNotice('Reconnected to chat', 'connected', 2500);
+        showConnectionStatus('Reconnected to chat', 'connected', 2500);
       } else {
         setShowConnectionNotice(false);
       }
+
       setConnectionStatus('connected');
     };
     ws.onclose = () => {
@@ -1099,12 +1053,13 @@ function Messages() {
       const shouldAttemptReconnect = !!currUserId;
       if (!shouldAttemptReconnect) return;
       setIsReconnectingSocket(true);
-      showNotice(
+      showConnectionStatus(
         reconnectAttemptRef.current > 0
           ? `Still reconnecting... (attempt ${reconnectAttemptRef.current + 1})`
           : 'Connection lost. Reconnecting...',
         'reconnecting'
       );
+
       const attempt = reconnectAttemptRef.current + 1;
       reconnectAttemptRef.current = attempt;
       const delay = Math.min(6000, 800 * attempt);
@@ -1115,8 +1070,9 @@ function Messages() {
     ws.onerror = () => {
       if (socketRef.current !== ws) return;
       if (reconnectAttemptRef.current >= 2) {
-        showNotice('Unable to reach chat server. Retrying...', 'error');
+        showConnectionStatus('Unable to reach chat server. Retrying...', 'error');
       }
+
     };
     setSocket(ws);
   };
@@ -1187,7 +1143,7 @@ function Messages() {
     setupWebSocket();
   };
 
-  const showNotice = (message, status = 'connected', autoHideMs = 0) => {
+  const showConnectionStatus = (message, status = 'connected', autoHideMs = 0) => {
     if (connectionNoticeTimeoutRef.current) clearTimeout(connectionNoticeTimeoutRef.current);
     setConnectionStatus(status);
     setConnectionNotice(message);
@@ -1198,6 +1154,7 @@ function Messages() {
       }, autoHideMs);
     }
   };
+
 
   const handleTyping = (e) => {
     setNewMessage(e.target.value);
@@ -1265,7 +1222,7 @@ function Messages() {
   };
 
   const handleMediaUpload = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file || !activeUser) return;
     setIsUploading(true);
     const formData = new FormData();
@@ -1273,9 +1230,20 @@ function Messages() {
     try {
       const resp = await api.upload('/chat/upload', formData);
       const type = file.type.startsWith('video') ? 'video' : 'image';
-      socket.send(JSON.stringify({ type: 'chat', to: activeUser.id, message_type: type, media_url: resp.url, text: '' }));
+      const ws = socketRef.current || socket;
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        showNotice('Unable to send media right now. Chat is reconnecting.', 'error');
+        return;
+      }
+      ws.send(JSON.stringify({ type: 'chat', to: activeUser.id, message_type: type, media_url: resp.url, text: '' }));
       scrollToBottom();
-    } catch (err) { console.error(err); } finally { setIsUploading(false); if (e.target) e.target.value = ''; }
+    } catch (err) {
+      console.error(err);
+      showNotice('Media upload failed. Please try again.', 'error');
+    } finally {
+      setIsUploading(false);
+      if (e.target) e.target.value = '';
+    }
   };
 
   const handleReaction = (messageId, emoji) => {
@@ -1300,55 +1268,17 @@ function Messages() {
     socket.send(JSON.stringify({ type: 'chat', to: targetUser.id, text: `[Forwarded]: ${messageText}` }));
     setForwardingMessage(null);
     setActiveMenuId(null);
-    setActiveUser(targetUser);
+    selectConversation(targetUser);
   };
 
   const handleReport = () => {
-    alert("Message reported successfully.");
+    showNotice("Message reported successfully.", "success");
     setActiveMenuId(null);
   };
 
+
   const scrollToBottom = () => {
     setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, 100);
-  };
-
-  const renderAvatar = (user, size = 40) => {
-    const hasProfilePic = user && user.profile_pic;
-    return (
-      <div style={{ position: 'relative', display: 'inline-block', width: size, height: size }}>
-        {hasProfilePic ? (
-          <img src={buildAssetUrl(user.profile_pic)} alt={user.username} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }} />
-        ) : (
-          <div style={{ width: size, height: size, borderRadius: '50%', background: 'var(--accent-gradient)', display: 'grid', placeItems: 'center', color: '#021214', fontWeight: 700, fontSize: size * 0.45 }}>{user?.username?.[0]?.toUpperCase() || 'U'}</div>
-        )}
-        {onlineUsers.has(user?.id) && (
-          <span style={{ position: 'absolute', bottom: 0, right: 0, width: size * 0.28, height: size * 0.28, background: 'var(--success-color)', border: '2px solid rgba(6, 6, 6, 0.9)', borderRadius: '50%' }} />
-        )}
-      </div>
-    );
-  };
-
-  const formatTime = (ts) => {
-    if (!ts) return '';
-    const date = new Date(ts);
-    if (isNaN(date.getTime())) return '';
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
-  };
-
-  const formatConversationTime = (ts) => {
-    if (!ts) return '';
-    const date = new Date(ts);
-    if (Number.isNaN(date.getTime())) return '';
-
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    if (isToday) return formatTime(ts);
-
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
   const updateConversationMeta = ({ userId, previewText, timestamp, incrementUnread = false }) => {
@@ -1388,8 +1318,6 @@ function Messages() {
     }
   };
 
-  const filteredConversations = conversations.filter(u => u.username?.toLowerCase().includes(searchQuery.toLowerCase()));
-
   const timelineItems = useMemo(() => {
     return messages.reduce((items, m, index) => {
       const systemNotice = getSystemCallNotice(m, currUserId, activeUser?.username, messages.slice(0, index));
@@ -1404,7 +1332,7 @@ function Messages() {
       const nextDate = next ? toDate(next.time) : null;
 
       const closeToPrevious = previousDate && currentDate && Math.abs(currentDate.getTime() - previousDate.getTime()) <= GROUP_WINDOW_MS;
-      const closeToNext = nextDate && currentDate && Math.abs(nextDate.getTime() - currentDate.getTime()) <= GROUP_WINDOW_MS;
+      const closeToNext = nextDate && currentDate && Math.abs(currentDate.getTime() - currentDate.getTime()) <= GROUP_WINDOW_MS;
 
       const groupedWithPrevious = !!previous && previous.from === m.from && isSameDay(previous.time, m.time) && closeToPrevious;
       const groupedWithNext = !!next && next.from === m.from && isSameDay(next.time, m.time) && closeToNext;
@@ -1422,27 +1350,6 @@ function Messages() {
       return items;
     }, []);
   }, [activeUser?.username, currUserId, messages]);
-
-  const getBubbleRadius = (isMine, groupedWithPrevious, groupedWithNext) => {
-    if (isMine) {
-      return `${groupedWithPrevious ? 14 : 22}px 22px ${groupedWithNext ? 14 : 22}px 22px`;
-    }
-    return `22px ${groupedWithPrevious ? 14 : 22}px 22px ${groupedWithNext ? 14 : 22}px`;
-  };
-
-  const callStatusLabel = callState === CALL_STATE.RINGING
-    ? `${callParticipant?.username || 'Someone'} is calling you...`
-    : callState === CALL_STATE.DIALING
-      ? `Calling ${callParticipant?.username || '...'}`
-      : callState === CALL_STATE.CONNECTING
-        ? `Connecting to ${callParticipant?.username || '...'}`
-        : callState === CALL_STATE.ACTIVE
-        ? `In ${callMode} call with ${callParticipant?.username || 'participant'}`
-        : callState === CALL_STATE.FAILED
-          ? `Call failed`
-          : callState === CALL_STATE.ENDED
-            ? `Call ended`
-        : '';
 
   const theme = {
     pageBg: 'var(--bg-color)',
@@ -1468,68 +1375,92 @@ function Messages() {
     dangerStrong: 'rgba(255, 51, 102, 0.28)',
     dangerText: '#ffd0dc',
     warning: '#fbbf24',
+    overlay: 'rgba(0,0,0,0.8)',
   };
 
+  const callStatusLabel = callState === CALL_STATE.RINGING
+    ? `${callParticipant?.username || 'Someone'} is calling you...`
+    : callState === CALL_STATE.DIALING
+      ? `Calling ${callParticipant?.username || '...'}`
+      : callState === CALL_STATE.CONNECTING
+        ? `Connecting to ${callParticipant?.username || '...'}`
+        : callState === CALL_STATE.ACTIVE
+          ? `In ${callMode} call with ${callParticipant?.username || 'participant'}`
+          : callState === CALL_STATE.FAILED
+            ? `Call failed`
+            : callState === CALL_STATE.ENDED
+              ? `Call ended`
+              : '';
+
   return (
-    <div style={{ height: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: theme.pageBg, color: theme.text }}>
+    <div style={{ height: isPhoneViewport ? 'calc(100dvh - 72px)' : '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: theme.pageBg, color: theme.text }}>
       <style>{`
         .sidebarScroll::-webkit-scrollbar, .chatScroll::-webkit-scrollbar { width: 6px; }
         .sidebarScroll::-webkit-scrollbar-thumb, .chatScroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 9999px; }
         .sidebarScroll:hover::-webkit-scrollbar-thumb, .chatScroll:hover::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); }
       `}</style>
       
-      <div style={{ width: '100%', height: '100dvh', display: 'grid', gridTemplateColumns: '320px 1fr', overflow: 'hidden' }}>
-        <aside style={{ borderRight: `1px solid ${theme.borderSoft}`, background: theme.panelBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ padding: '24px 20px 18px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h1 style={{ margin: 0, fontSize: 26 }}>{t('messages.title')}</h1>
-              <button style={{ width: 38, height: 38, borderRadius: 14, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: 'pointer' }}>+</button>
-            </div>
-            <div style={{ marginTop: 18, borderRadius: 18, background: theme.panelSoft, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Search size={16} color={theme.textMuted} />
-              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t('common.search')} style={{ width: '100%', border: 'none', background: 'transparent', color: theme.text, outline: 'none' }} />
-            </div>
-          </div>
-          <div className="sidebarScroll" style={{ flex: 1, overflowY: 'auto', padding: '0 20px 20px' }}>
-            {filteredConversations.map(user => {
-              const active = sameId(activeUser?.id, user.id);
-              return (
-                <button key={user.id} onClick={() => setActiveUser(user)} style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '14px 20px', borderRadius: 20, background: active ? theme.accentSoft : theme.panelMuted, border: active ? `1px solid ${theme.accentStrong}` : 'none', color: theme.text, cursor: 'pointer', textAlign: 'left', marginBottom: 8 }}>
-                  {renderAvatar(user, 42)}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <p style={{ margin: 0, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.username}</p>
-                      <span style={{ fontSize: 11, color: theme.textMuted, flexShrink: 0 }}>{formatConversationTime(user.lastMessageAt)}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
-                      <p style={{ margin: 0, fontSize: 13, color: theme.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.lastMessage}</p>
-                      {user.unreadCount > 0 && (
-                        <span style={{ minWidth: 20, height: 20, borderRadius: 999, padding: '0 6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, background: theme.accent, color: theme.accentTextDark, flexShrink: 0 }}>
-                          {user.unreadCount > 99 ? '99+' : user.unreadCount}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </aside>
+      <div
+        className="messages-layout"
+        style={{
+          width: '100%',
+          height: isPhoneViewport ? 'calc(100dvh - 72px)' : '100dvh',
+          display: 'grid',
+          gridTemplateColumns: isPhoneViewport ? '1fr' : `${isTabletViewport ? '280px' : 'minmax(280px, 320px)'} minmax(0, 1fr)`,
+          overflow: 'hidden'
+        }}
+      >
+        {showConversationPane && (
+          <ConversationList 
+            conversations={conversations}
+            activeUser={activeUser}
+            setActiveUser={selectConversation}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            onlineUsers={onlineUsers}
+            formatConversationTime={formatConversationTime}
+            theme={theme}
+            t={t}
+          />
+        )}
 
-        <main style={{ borderLeft: `1px solid ${theme.borderSoft}`, background: theme.panelBgStrong, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {(!isPhoneViewport || activeUser) && (
+        <main style={{ borderLeft: isPhoneViewport ? 'none' : `1px solid ${theme.borderSoft}`, background: theme.panelBgStrong, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
           {activeUser ? (
             <>
-              <div style={{ padding: '22px 26px', borderBottom: `1px solid ${theme.borderSoft}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ padding: isPhoneViewport ? '14px 14px' : '22px 26px', borderBottom: `1px solid ${theme.borderSoft}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  {renderAvatar(activeUser, 52)}
-                  <div><h2 style={{ margin: 0, fontSize: 24 }}>{activeUser.username}</h2><p style={{ margin: '4px 0 0', fontSize: 13, color: Array.from(onlineUsers).some((id) => sameId(id, activeUser.id)) ? theme.success : theme.textMuted }}>{Array.from(onlineUsers).some((id) => sameId(id, activeUser.id)) ? 'Active now' : 'Offline'}</p></div>
+                  {isPhoneViewport && (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/messages', { replace: true })}
+                      style={{ width: 40, height: 40, borderRadius: 14, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                      aria-label="Back to chats"
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                  )}
+                  <Avatar user={activeUser} size={52} onlineUsers={onlineUsers} />
+                  <div style={{ minWidth: 0 }}>
+                    <h2 style={{ margin: 0, fontSize: isPhoneViewport ? 18 : 24, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeUser.username}</h2>
+                    <p style={{ margin: '4px 0 0', fontSize: 13, color: Array.from(onlineUsers).some((id) => sameId(id, activeUser.id)) ? theme.success : theme.textMuted }}>
+                      {Array.from(onlineUsers).some((id) => sameId(id, activeUser.id)) ? 'Active now' : 'Offline'}
+                    </p>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={() => startCall('audio')} disabled={callState !== CALL_STATE.IDLE} style={{ width: 44, height: 44, borderRadius: 16, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: callState === CALL_STATE.IDLE ? 'pointer' : 'not-allowed', opacity: callState === CALL_STATE.IDLE ? 1 : 0.5 }}><Phone size={18} /></button>
-                  <button onClick={() => startCall('video')} disabled={callState !== CALL_STATE.IDLE} style={{ width: 44, height: 44, borderRadius: 16, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: callState === CALL_STATE.IDLE ? 'pointer' : 'not-allowed', opacity: callState === CALL_STATE.IDLE ? 1 : 0.5 }}><Video size={18} /></button>
-                  <button style={{ width: 44, height: 44, borderRadius: 16, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: 'pointer' }}><MoreHorizontal size={18} /></button>
+                <div style={{ display: 'flex', gap: isPhoneViewport ? 6 : 10, flexShrink: 0 }}>
+                  <button onClick={() => startCall('audio')} disabled={callState !== CALL_STATE.IDLE} style={{ width: 44, height: 44, borderRadius: 16, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: callState === CALL_STATE.IDLE ? 'pointer' : 'not-allowed', opacity: callState === CALL_STATE.IDLE ? 1 : 0.5 }}>
+                    <Phone size={18} />
+                  </button>
+                  <button onClick={() => startCall('video')} disabled={callState !== CALL_STATE.IDLE} style={{ width: 44, height: 44, borderRadius: 16, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: callState === CALL_STATE.IDLE ? 'pointer' : 'not-allowed', opacity: callState === CALL_STATE.IDLE ? 1 : 0.5 }}>
+                    <Video size={18} />
+                  </button>
+                  <button style={{ width: 44, height: 44, borderRadius: 16, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: 'pointer' }}>
+                    <MoreHorizontal size={18} />
+                  </button>
                 </div>
               </div>
+
               {callError && (
                 <div style={{ margin: '12px 26px 0', padding: '10px 14px', borderRadius: 14, background: theme.dangerSoft, border: `1px solid ${theme.dangerStrong}`, color: theme.dangerText, fontSize: 13 }}>
                   {callError}
@@ -1541,431 +1472,138 @@ function Messages() {
                 </div>
               )}
 
-              <div ref={chatScrollRef} onScroll={handleChatScroll} className="chatScroll" style={{ flex: 1, overflowY: 'auto', padding: '26px 26px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {isFetchingOlderMessages && (
-                  <div style={{ alignSelf: 'center', fontSize: 12, color: theme.textMuted, background: theme.panelSoft, borderRadius: 9999, padding: '4px 10px', marginBottom: 8 }}>
-                    Loading older messages...
-                  </div>
-                )}
-                <AnimatePresence>
-                  {timelineItems.map(({ message: m, key, showDateSeparator, dateLabel, groupedWithPrevious, groupedWithNext, systemNotice }, index) => {
-                    const isMine = sameId(m.from, currUserId);
-                    const messageSpacing = groupedWithNext ? 4 : 14;
-                    const isSystemMessage = m.message_type === 'system';
-                    return (
-                      <React.Fragment key={key}>
-                        {showDateSeparator && (
-                          <div style={{ alignSelf: 'center', fontSize: 12, color: theme.textMuted, background: theme.panelSoft, borderRadius: 9999, padding: '4px 10px', margin: '6px 0 10px' }}>
-                            {dateLabel}
-                          </div>
-                        )}
-                        {isSystemMessage ? (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            style={{ alignSelf: 'center', marginBottom: messageSpacing, textAlign: 'center', maxWidth: 320 }}
-                          >
-                            <div
-                              style={{
-                                padding: '10px 16px',
-                                borderRadius: 18,
-                                background: theme.panelMid,
-                                border: `1px solid ${theme.borderSoft}`,
-                                color: theme.textSoft,
-                                fontSize: 14,
-                                lineHeight: 1.5,
-                                backdropFilter: 'blur(6px)',
-                              }}
-                            >
-                              {systemNotice?.text || m.text}
-                            </div>
-                            <div style={{ marginTop: 8, fontSize: 12, color: theme.textMuted }}>
-                              {formatTime(m.time)}
-                            </div>
-                          </motion.div>
-                        ) : (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} onMouseEnter={() => setHoveredMessage(index)} onMouseLeave={() => setHoveredMessage(null)} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', maxWidth: '72%', display: 'flex', flexDirection: 'column', position: 'relative', marginBottom: messageSpacing }}>
-                        {m.replied_to_id && (
-                          <div style={{ padding: '8px 12px', background: theme.panelSoft, borderRadius: '12px 12px 4px 4px', fontSize: 12, color: theme.textMuted, borderLeft: `3px solid ${theme.accent}`, marginBottom: -4, opacity: 0.8 }}>
-                            {messages.find(msg => msg.id === m.replied_to_id)?.text || "Original message deleted"}
-                          </div>
-                        )}
-                        
-                        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
-                          <div style={{
-                            padding: (m.message_type === 'sticker' || m.message_type === 'image' || m.message_type === 'video' || m.message_type === 'voice') ? '0' : '12px 18px',
-                            borderRadius: m.replied_to_id ? '4px 22px 22px 22px' : getBubbleRadius(isMine, groupedWithPrevious, groupedWithNext),
-                            background: (m.message_type === 'sticker' || m.message_type === 'image' || m.message_type === 'video') ? 'none' : (m.message_type === 'voice' ? 'rgba(0,0,0,0.2)' : (isMine ? theme.accentGradient : theme.panelMid)),
-                            color: isMine ? theme.accentTextDark : theme.text, fontSize: 15, position: 'relative'
-                          }}>
-                            {m.message_type === 'image' && <img src={m.media_url} alt="media" onClick={() => setSelectedMedia({ url: m.media_url, type: 'image' })} style={{ maxWidth: 320, maxHeight: 240, width: '100%', objectFit: 'cover', borderRadius: 18, display: 'block', cursor: 'pointer' }} />}
-                            {m.message_type === 'video' && <video src={m.media_url} controls={false} onClick={() => setSelectedMedia({ url: m.media_url, type: 'video' })} style={{ maxWidth: 320, maxHeight: 240, width: '100%', objectFit: 'cover', borderRadius: 18, display: 'block', cursor: 'pointer' }} />}
-                            {m.message_type === 'voice' && <div style={{ padding: '8px 12px' }}><audio src={m.media_url} controls style={{ maxWidth: '100%', height: 32, filter: isMine ? 'invert(1) hue-rotate(180deg)' : 'none' }} /></div>}
-                            {m.message_type === 'sticker' && <img src={m.media_url} alt="sticker" style={{ width: 140, height: 140, objectFit: 'contain' }} />}
-                            {m.message_type === 'text' && m.text}
-                            
-                            {/* Reactions Display (Outer Corner) */}
-                            {m.reactions && Object.keys(JSON.parse(m.reactions)).length > 0 && (
-                              <div style={{ position: 'absolute', top: '100%', [isMine ? 'right' : 'left']: 8, marginTop: -15, display: 'flex', gap: 2, zIndex: 60 }}>
-                                {Object.entries(JSON.parse(m.reactions)).map(([emoji, users]) => (
-                                  <div key={emoji} style={{ background: theme.panelBgStrong, border: `1px solid ${theme.border}`, borderRadius: 10, padding: '2px 4px', fontSize: 10, display: 'flex', alignItems: 'center', gap: 2, boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
-                                    <span>{emoji}</span><span style={{ color: theme.textMuted }}>{users.length}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+              <MessageList 
+                chatScrollRef={chatScrollRef}
+                handleChatScroll={handleChatScroll}
+                isFetchingOlderMessages={isFetchingOlderMessages}
+                timelineItems={timelineItems}
+                currUserId={currUserId}
+                activeUser={activeUser}
+                formatTime={formatTime}
+                theme={theme}
+                activeMenuId={activeMenuId}
+                setActiveMenuId={setActiveMenuId}
+                hoveredMessage={hoveredMessage}
+                setHoveredMessage={setHoveredMessage}
+                handleCopy={handleCopy}
+                setForwardingMessage={setForwardingMessage}
+                handleReport={handleReport}
+                handleDelete={handleDelete}
+                setReplyingTo={setReplyingTo}
+                handleReaction={handleReaction}
+                handleRetryMessage={handleRetryMessage}
+                setSelectedMedia={setSelectedMedia}
+                messages={messages}
+                messagesEndRef={messagesEndRef}
+              />
 
-                          {/* Action Pill (In front/Side-by-side) */}
-                          <AnimatePresence>
-                            {(hoveredMessage === index || activeMenuId?.id === m.id) && (
-                              <motion.div 
-                                initial={{ opacity: 0, x: isMine ? 10 : -10 }} 
-                                animate={{ opacity: 1, x: 0 }} 
-                                exit={{ opacity: 0, x: isMine ? 10 : -10 }} 
-                                style={{ 
-                                  position: 'absolute', 
-                                  top: '50%', 
-                                  transform: 'translateY(-50%)',
-                                  [isMine ? 'right' : 'left']: 'calc(100% + 12px)', 
-                                  background: theme.panelBgStrong, 
-                                  border: `1px solid ${theme.border}`, 
-                                  borderRadius: 30, 
-                                  padding: '4px 10px', 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
-                                  gap: 12, 
-                                  zIndex: 100, 
-                                  boxShadow: '0 4px 15px rgba(0,0,0,0.5)', 
-                                  color: theme.textMuted 
-                                }}
-                              >
-                                <div style={{ position: 'relative', display: 'flex' }}>
-                                  <MoreVertical size={14} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId?.id === m.id && activeMenuId?.type === 'more' ? null : { id: m.id, type: 'more' }); }} />
-                                  {activeMenuId?.id === m.id && activeMenuId?.type === 'more' && (
-                                    <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 12, background: theme.panelBgStrong, border: `1px solid ${theme.borderStrong}`, borderRadius: 12, overflow: 'hidden', zIndex: 150, minWidth: 140 }}>
-                                      <button onClick={() => handleCopy(m.text)} style={{ padding: '10px 16px', background: 'none', border: 'none', color: theme.text, cursor: 'pointer', width: '100%', textAlign: 'left' }}>Copy</button>
-                                      <button onClick={() => setForwardingMessage(m)} style={{ padding: '10px 16px', background: 'none', border: 'none', color: theme.text, cursor: 'pointer', width: '100%', textAlign: 'left' }}>Forward</button>
-                                      {!isMine && <button onClick={() => handleReport(m.id)} style={{ padding: '10px 16px', background: 'none', border: 'none', color: theme.warning, cursor: 'pointer', width: '100%', textAlign: 'left' }}>Report</button>}
-                                      <button onClick={() => handleDelete(m.id)} style={{ padding: '10px 16px', background: 'none', border: 'none', color: theme.dangerText, cursor: 'pointer', width: '100%', textAlign: 'left' }}>Delete</button>
-                                    </div>
-                                  )}
-                                </div>
-                                <CornerUpLeft size={14} style={{ cursor: 'pointer' }} onClick={() => setReplyingTo(m)} />
-                                <div style={{ position: 'relative', display: 'flex' }}>
-                                  <Smile size={14} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId?.id === m.id && activeMenuId?.type === 'emoji' ? null : { id: m.id, type: 'emoji' }); }} />
-                                  {activeMenuId?.id === m.id && activeMenuId?.type === 'emoji' && (
-                                    <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 12, background: theme.panelBgStrong, borderRadius: 20, padding: '4px 8px', display: 'flex', gap: 6, zIndex: 150 }}>
-                                      {['❤️', '😂', '👍', '🔥', '😮', '😢'].map(emoji => <span key={emoji} style={{ cursor: 'pointer', fontSize: 18 }} onClick={() => handleReaction(m.id, emoji)}>{emoji}</span>)}
-                                    </div>
-                                  )}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, alignSelf: isMine ? 'flex-end' : 'flex-start', marginTop: m.reactions ? 18 : 8 }}>
-                          <span style={{ fontSize: 10, color: theme.textMuted }}>{formatTime(m.time)}</span>
-                          {isMine && m.deliveryStatus === 'sending' && <span style={{ fontSize: 10, color: theme.textMuted }}>Sending...</span>}
-                          {isMine && (m.deliveryStatus === 'sent' || m.deliveryStatus === 'received') && <Check size={14} color={theme.textMuted} />}
-                          {isMine && m.deliveryStatus === 'read' && <CheckCheck size={14} color={theme.accent} />}
-                          {isMine && m.deliveryStatus === 'failed' && (
-                            <button type="button" onClick={() => handleRetryMessage(m.client_id)} style={{ background: 'none', border: 'none', color: theme.dangerText, cursor: 'pointer', fontSize: 10, padding: 0 }}>
-                              Retry
-                            </button>
-                          )}
-                          {isMine && !m.deliveryStatus && <CheckCheck size={14} color={m.is_read ? theme.accent : theme.textMuted} />}
-                        </div>
-                      </motion.div>
-                      )}
-                      </React.Fragment>
-                    );
-                  })}
-                </AnimatePresence>
-                <div ref={messagesEndRef} />
-              </div>
-
-              <form onSubmit={sendMessage} style={{ padding: '16px 24px 24px', borderTop: `1px solid ${theme.borderSoft}`, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <AnimatePresence>{replyingTo && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 16px', background: theme.panelSoft, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: `4px solid ${theme.accent}` }}>
-                    <div style={{ minWidth: 0 }}><p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: theme.accent }}>Replying to {sameId(replyingTo.from, currUserId) ? 'yourself' : activeUser.username}</p><p style={{ margin: '4px 0 0', fontSize: 14, color: theme.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{replyingTo.text}</p></div>
-                    <X size={18} style={{ cursor: 'pointer' }} onClick={() => setReplyingTo(null)} />
-                  </motion.div>
-                )}</AnimatePresence>
-                <div style={{ background: theme.panelSoft, borderRadius: 24, display: 'flex', alignItems: 'center', padding: '4px 8px', border: `1px solid ${theme.border}`, position: 'relative' }}>
-                  <button type="button" onClick={(e) => { e.stopPropagation(); setShowEmojiPicker(!showEmojiPicker); }} style={{ background: 'none', border: 'none', padding: 8, color: theme.textMuted, cursor: 'pointer' }}><Smile size={24} /></button>
-                  <AnimatePresence>{showEmojiPicker && (
-                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 16, background: theme.panelBgStrong, borderRadius: 24, padding: 16, width: 320, zIndex: 100, boxShadow: '0 20px 50px rgba(0,0,0,0.6)' }} onClick={e => e.stopPropagation()}>
-                      <input value={emojiSearch} onChange={e => setEmojiSearch(e.target.value)} placeholder="Search emoji..." style={{ width: '100%', background: theme.panelSoft, border: `1px solid ${theme.border}`, borderRadius: 12, padding: '8px 12px', color: theme.text, outline: 'none', marginBottom: 12 }} />
-                      <div className="chatScroll" style={{ maxHeight: 280, overflowY: 'auto' }}>
-                        {Object.entries(EMOJI_CATEGORIES).map(([cat, list]) => (
-                          <div key={cat} style={{ marginBottom: 16 }}>
-                            <p style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', marginBottom: 8 }}>{cat}</p>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
-                              {list.map(emoji => <span key={emoji} style={{ fontSize: 22, cursor: 'pointer' }} onClick={() => setNewMessage(p => p + emoji)}>{emoji}</span>)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}</AnimatePresence>
-                  <input value={newMessage} onChange={handleTyping} placeholder="Message..." style={{ flex: 1, background: 'none', border: 'none', color: theme.text, padding: '12px 8px', outline: 'none' }} />
-                  <button type="button" onClick={toggleRecording} style={{ background: 'none', border: 'none', padding: 8, color: isRecording ? theme.danger : theme.textMuted, cursor: 'pointer' }}><Mic size={22} /></button>
-                  <button type="button" onClick={() => fileInputRef.current.click()} style={{ background: 'none', border: 'none', padding: 8, color: theme.textMuted, cursor: 'pointer' }}><ImageIcon size={22} /><input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*,video/*" onChange={handleMediaUpload} /></button>
-                  <button type="submit" style={{ background: 'none', border: 'none', padding: '8px 12px', color: theme.accent, cursor: 'pointer' }}><Send size={24} /></button>
-                </div>
-              </form>
+              <MessageInput 
+                sendMessage={sendMessage}
+                replyingTo={replyingTo}
+                setReplyingTo={setReplyingTo}
+                showEmojiPicker={showEmojiPicker}
+                setShowEmojiPicker={setShowEmojiPicker}
+                emojiSearch={emojiSearch}
+                setEmojiSearch={setEmojiSearch}
+                newMessage={newMessage}
+                setNewMessage={setNewMessage}
+                handleTyping={handleTyping}
+                toggleRecording={toggleRecording}
+                isRecording={isRecording}
+                fileInputRef={fileInputRef}
+                handleMediaUpload={handleMediaUpload}
+                theme={theme}
+                activeUser={activeUser}
+                currUserId={currUserId}
+              />
             </>
           ) : (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '48px' }}>
-              <MessageCircle size={96} style={{ color: theme.accent }} /><h2 style={{ fontSize: 32 }}>Pick a chat</h2><p style={{ color: theme.textMuted }}>Select a contact from the left.</p>
+              <MessageCircle size={96} style={{ color: theme.accent }} />
+              <h2 style={{ fontSize: 32 }}>Pick a chat</h2>
+              <p style={{ color: theme.textMuted }}>Select a contact from the left.</p>
             </div>
           )}
         </main>
+        )}
       </div>
 
+      <CallOverlay 
+        callState={callState}
+        isCallMinimized={isCallMinimized}
+        setIsCallMinimized={setIsCallMinimized}
+        callParticipant={callParticipant}
+        callStatusLabel={callStatusLabel}
+        callMode={callMode}
+        remoteVideoRef={remoteVideoRef}
+        localVideoRef={localVideoRef}
+        remoteAudioRef={remoteAudioRef}
+        callDuration={callDuration}
+        isCameraEnabled={isCameraEnabled}
+        inputLevel={inputLevel}
+        callQuality={callQuality}
+        selectedAudioInputId={selectedAudioInputId}
+        setSelectedAudioInputId={setSelectedAudioInputId}
+        selectedAudioOutputId={selectedAudioOutputId}
+        setSelectedAudioOutputId={setSelectedAudioOutputId}
+        selectedVideoInputId={selectedVideoInputId}
+        setSelectedVideoInputId={setSelectedVideoInputId}
+        availableDevices={availableDevices}
+        permissionError={permissionError}
+        isReconnectingSocket={isReconnectingSocket}
+        attemptManualReconnect={attemptManualReconnect}
+        declineIncomingCall={declineIncomingCall}
+        acceptIncomingCall={acceptIncomingCall}
+        toggleMute={toggleMute}
+        isMuted={isMuted}
+        toggleCamera={toggleCamera}
+        switchCamera={switchCamera}
+        toggleLowBandwidthMode={toggleLowBandwidthMode}
+        isLowBandwidth={isLowBandwidth}
+        endCall={endCall}
+        theme={theme}
+        onlineUsers={onlineUsers}
+      />
+
       <AnimatePresence>
-        {showConnectionNotice && (
-          <div style={{ position: 'fixed', top: 14, left: '50%', transform: 'translateX(-50%)', zIndex: 1300 }}>
-            <div
-              style={{
-                borderRadius: 9999,
-                padding: '10px 14px',
-                fontSize: 12,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                background:
-                  connectionStatus === 'error'
-                    ? 'rgba(78, 12, 34, 0.92)'
-                    : connectionStatus === 'reconnecting'
-                      ? 'rgba(4, 52, 74, 0.92)'
-                      : 'rgba(2, 58, 46, 0.92)',
-                border:
-                  connectionStatus === 'error'
-                    ? `1px solid ${theme.dangerStrong}`
-                    : connectionStatus === 'reconnecting'
-                      ? `1px solid ${theme.accentStrong}`
-                      : '1px solid rgba(0, 255, 136, 0.3)',
-                color: theme.text,
-                backdropFilter: 'blur(8px)',
-              }}
-            >
-              <span>{connectionNotice}</span>
-              {(connectionStatus === 'error' || connectionStatus === 'reconnecting') && (
-                <button
-                  type="button"
-                  onClick={attemptManualReconnect}
-                  style={{
-                    border: `1px solid ${theme.borderStrong}`,
-                    background: 'transparent',
-                    color: theme.text,
-                    borderRadius: 9999,
-                    padding: '4px 10px',
-                    cursor: 'pointer',
-                    fontSize: 11,
-                  }}
-                >
-                  Retry
-                </button>
-              )}
+        {forwardingMessage && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'absolute', inset: 0, background: theme.overlay, zIndex: 100, display: 'grid', placeItems: 'center' }}>
+            <div style={{ width: '100%', maxWidth: 400, background: theme.panelBgStrong, borderRadius: 28, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <h3>Forward</h3>
+                <X size={20} style={{ cursor: 'pointer' }} onClick={() => setForwardingMessage(null)} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 300, overflowY: 'auto' }}>
+                {conversations.map(user => (
+                  <button 
+                    key={user.id} 
+                    onClick={() => handleForward(user, forwardingMessage.text)} 
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, background: theme.panelMuted, border: 'none', color: theme.text, cursor: 'pointer' }}
+                  >
+                    <Avatar user={user} size={36} onlineUsers={onlineUsers} />
+                    <span>{user.username}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
-        {callState !== CALL_STATE.IDLE && !isCallMinimized && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, background: theme.overlay, backdropFilter: 'blur(8px)', zIndex: 1100, display: 'grid', placeItems: 'center', padding: 20 }}
-          >
-            <motion.div
-              initial={{ y: 18, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 18, opacity: 0 }}
-              style={{ width: '100%', maxWidth: 440, background: theme.panelBgStrong, borderRadius: 28, border: `1px solid ${theme.borderStrong}`, padding: 24, boxShadow: '0 30px 70px rgba(0,0,0,0.5)', position: 'relative' }}
-            >
-              <button
-                type="button"
-                onClick={() => setIsCallMinimized(true)}
-                style={{ position: 'absolute', top: 20, right: 20, width: 40, height: 40, borderRadius: 14, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: 'pointer', display: 'grid', placeItems: 'center' }}
-              >
-                <Minimize2 size={16} />
-              </button>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  {callParticipant ? renderAvatar(callParticipant, 56) : <div style={{ width: 56, height: 56, borderRadius: '50%', background: theme.panelSoft }} />}
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: 22 }}>{callParticipant?.username || 'Call'}</h3>
-                    <p style={{ margin: '4px 0 0', color: theme.textMuted, fontSize: 14 }}>{callStatusLabel}</p>
-                  </div>
-                </div>
-                <div />
-              </div>
-
-              <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: callMode === 'video' ? '1fr 160px' : '1fr', gap: 12 }}>
-                <div style={{ minHeight: 220, borderRadius: 20, border: `1px solid ${theme.borderStrong}`, background: theme.panelBg, overflow: 'hidden', position: 'relative' }}>
-                  {callMode === 'video' ? (
-                    <video ref={remoteVideoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center' }}>
-                      {callParticipant ? renderAvatar(callParticipant, 84) : null}
-                    </div>
-                  )}
-                  <div style={{ position: 'absolute', left: '50%', bottom: 14, transform: 'translateX(-50%)', padding: '8px 14px', borderRadius: 999, background: theme.panelBg, border: `1px solid ${theme.borderStrong}`, color: theme.text, fontSize: 13, fontWeight: 700, letterSpacing: '0.03em', backdropFilter: 'blur(8px)' }}>
-                    {callDuration > 0 ? `${Math.floor(callDuration / 60)}:${String(callDuration % 60).padStart(2, '0')}` : '00:00'}
-                  </div>
-                  <audio ref={remoteAudioRef} autoPlay playsInline />
-                </div>
-                {callMode === 'video' && (
-                  <div style={{ minHeight: 220, borderRadius: 20, border: `1px solid ${theme.borderStrong}`, background: theme.panelBg, overflow: 'hidden', position: 'relative' }}>
-                    <video ref={localVideoRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
-                    {!isCameraEnabled && (
-                      <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', background: theme.overlay, color: theme.textMuted, fontSize: 12 }}>
-                        Camera Off
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div style={{ padding: '10px 12px', borderRadius: 12, background: theme.panelMid, fontSize: 12 }}>
-                  Mic Input: <strong>{inputLevel}%</strong>
-                </div>
-                <div style={{ padding: '10px 12px', borderRadius: 12, background: theme.panelMid, fontSize: 12 }}>
-                  Bitrate: <strong>{callQuality.bitrateKbps} kbps</strong>
-                </div>
-              </div>
-
-              <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
-                <select value={selectedAudioInputId} onChange={(e) => setSelectedAudioInputId(e.target.value)} style={{ width: '100%', background: theme.panelSoft, color: theme.text, border: `1px solid ${theme.borderStrong}`, borderRadius: 10, padding: '10px 12px' }}>
-                  {availableDevices.audioInput.map((d) => <option key={d.deviceId} value={d.deviceId}>{d.label || 'Mic device'}</option>)}
-                </select>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(0, 1fr))', gap: 10 }}>
-                  <select value={selectedAudioOutputId} onChange={(e) => setSelectedAudioOutputId(e.target.value)} style={{ width: '100%', minWidth: 0, background: theme.panelSoft, color: theme.text, border: `1px solid ${theme.borderStrong}`, borderRadius: 10, padding: '10px 12px' }}>
-                    {availableDevices.audioOutput.map((d) => <option key={d.deviceId} value={d.deviceId}>{d.label || 'Speaker device'}</option>)}
-                  </select>
-                  <select value={selectedVideoInputId} onChange={(e) => setSelectedVideoInputId(e.target.value)} style={{ width: '100%', minWidth: 0, background: theme.panelSoft, color: theme.text, border: `1px solid ${theme.borderStrong}`, borderRadius: 10, padding: '10px 12px' }}>
-                    {availableDevices.videoInput.map((d) => <option key={d.deviceId} value={d.deviceId}>{d.label || 'Camera device'}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {(permissionError || isReconnectingSocket) && (
-                <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, background: 'rgba(251, 191, 36, 0.12)', border: '1px solid rgba(251, 191, 36, 0.28)', color: '#fde68a', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                  <span><AlertTriangle size={13} style={{ verticalAlign: 'middle', marginRight: 6 }} />{permissionError || 'Reconnecting call signaling...'}</span>
-                  {isReconnectingSocket && <button type="button" onClick={attemptManualReconnect} style={{ border: '1px solid rgba(253, 230, 138, 0.4)', background: 'transparent', color: '#fde68a', borderRadius: 999, padding: '5px 10px', cursor: 'pointer' }}><RefreshCcw size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />Retry</button>}
-                </div>
+        {selectedMedia && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedMedia(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'grid', placeItems: 'center', cursor: 'zoom-out' }}>
+            <button style={{ position: 'absolute', top: 30, right: 30, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 50, height: 50, color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center' }} onClick={() => setSelectedMedia(null)}><X size={30} /></button>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '85vh', borderRadius: 24, overflow: 'hidden', boxShadow: '0 30px 60px rgba(0,0,0,0.5)', cursor: 'default' }}>
+              {selectedMedia.type === 'image' ? (
+                <img src={selectedMedia.url} alt="preview" style={{ width: '100%', height: 'auto', display: 'block' }} />
+              ) : (
+                <video src={selectedMedia.url} controls autoPlay style={{ width: '100%', height: 'auto', display: 'block' }} />
               )}
-
-              <div style={{ marginTop: 20, display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                {callState === CALL_STATE.RINGING ? (
-                  <>
-                    <button type="button" onClick={declineIncomingCall} style={{ padding: '10px 16px', borderRadius: 999, border: `1px solid ${theme.dangerStrong}`, background: theme.dangerSoft, color: theme.dangerText, cursor: 'pointer' }}>
-                      <PhoneOff size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />Decline
-                    </button>
-                    <button type="button" onClick={acceptIncomingCall} style={{ padding: '10px 16px', borderRadius: 999, border: '1px solid rgba(0, 255, 136, 0.3)', background: 'rgba(0, 255, 136, 0.12)', color: '#baffd8', cursor: 'pointer' }}>
-                      <Phone size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />Accept {callMode === 'video' ? 'Video' : 'Voice'}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button type="button" onClick={toggleMute} style={{ padding: '10px 12px', borderRadius: 999, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: 'pointer' }}>
-                      {isMuted ? <MicOff size={14} /> : <Mic size={14} />}
-                    </button>
-                    {callMode === 'video' && (
-                      <>
-                        <button type="button" onClick={toggleCamera} style={{ padding: '10px 12px', borderRadius: 999, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: 'pointer' }}>
-                          {isCameraEnabled ? <Video size={14} /> : <VideoOff size={14} />}
-                        </button>
-                        <button type="button" onClick={switchCamera} style={{ padding: '10px 12px', borderRadius: 999, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: 'pointer' }}>
-                          <RefreshCcw size={14} />
-                        </button>
-                      </>
-                    )}
-                    <button type="button" onClick={toggleLowBandwidthMode} style={{ padding: '10px 16px', borderRadius: 999, border: `1px solid ${theme.accentStrong}`, background: isLowBandwidth ? theme.accentSoft : theme.panelSoft, color: theme.textSoft, cursor: 'pointer' }}>
-                      <Gauge size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />{isLowBandwidth ? 'Low BW On' : 'Low BW Off'}
-                    </button>
-                    <button type="button" onClick={endCall} style={{ padding: '10px 16px', borderRadius: 999, border: `1px solid ${theme.dangerStrong}`, background: theme.dangerSoft, color: theme.dangerText, cursor: 'pointer' }}>
-                      <PhoneOff size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />End Call
-                    </button>
-                  </>
-                )}
-              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      <AnimatePresence>
-        {callState !== CALL_STATE.IDLE && isCallMinimized && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 16 }}
-            style={{ position: 'fixed', right: 24, bottom: 24, zIndex: 1150, width: 'min(360px, calc(100vw - 32px))' }}
-          >
-            <div style={{ background: theme.panelBgStrong, border: `1px solid ${theme.borderStrong}`, borderRadius: 22, padding: 16, boxShadow: '0 22px 50px rgba(0,0,0,0.45)', backdropFilter: 'blur(10px)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                {callParticipant ? renderAvatar(callParticipant, 44) : <div style={{ width: 44, height: 44, borderRadius: '50%', background: theme.panelSoft }} />}
-                <button
-                  type="button"
-                  onClick={() => setIsCallMinimized(false)}
-                  style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', color: theme.text, textAlign: 'left', cursor: 'pointer', padding: 0 }}
-                >
-                  <p style={{ margin: 0, fontSize: 15, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{callParticipant?.username || 'Call'}</p>
-                  <p style={{ margin: '4px 0 0', fontSize: 12, color: theme.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{callStatusLabel}</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsCallMinimized(false)}
-                  style={{ width: 38, height: 38, borderRadius: 12, border: `1px solid ${theme.borderStrong}`, background: theme.panelSoft, color: theme.text, cursor: 'pointer', display: 'grid', placeItems: 'center' }}
-                >
-                  <Maximize2 size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={endCall}
-                  style={{ width: 38, height: 38, borderRadius: 12, border: `1px solid ${theme.dangerStrong}`, background: theme.dangerSoft, color: theme.dangerText, cursor: 'pointer', display: 'grid', placeItems: 'center' }}
-                >
-                  <PhoneOff size={16} />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>{forwardingMessage && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'absolute', inset: 0, background: theme.overlay, zIndex: 100, display: 'grid', placeItems: 'center' }}>
-          <div style={{ width: '100%', maxWidth: 400, background: theme.panelBgStrong, borderRadius: 28, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><h3>Forward</h3><X size={20} style={{ cursor: 'pointer' }} onClick={() => setForwardingMessage(null)} /></div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 300, overflowY: 'auto' }}>
-              {conversations.map(user => (
-                <button key={user.id} onClick={() => handleForward(user, forwardingMessage.text)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, background: theme.panelMuted, border: 'none', color: theme.text, cursor: 'pointer' }}>{renderAvatar(user, 36)}<span>{user.username}</span></button>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      )}</AnimatePresence>
-
-      <AnimatePresence>{selectedMedia && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedMedia(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'grid', placeItems: 'center', cursor: 'zoom-out' }}>
-          <button style={{ position: 'absolute', top: 30, right: 30, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 50, height: 50, color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center' }} onClick={() => setSelectedMedia(null)}><X size={30} /></button>
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '85vh', borderRadius: 24, overflow: 'hidden', boxShadow: '0 30px 60px rgba(0,0,0,0.5)', cursor: 'default' }}>
-            {selectedMedia.type === 'image' ? (
-              <img src={selectedMedia.url} alt="preview" style={{ width: '100%', height: 'auto', display: 'block' }} />
-            ) : (
-              <video src={selectedMedia.url} controls autoPlay style={{ width: '100%', height: 'auto', display: 'block' }} />
-            )}
-          </motion.div>
-        </motion.div>
-      )}</AnimatePresence>
     </div>
   );
 }

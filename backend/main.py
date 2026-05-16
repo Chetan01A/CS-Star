@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from chat import router as chat_router
 from settings import router as settings_router
 from activity import router as activity_router
+from story import router as story_router
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -28,99 +29,6 @@ UPLOADS_DIR = "uploads"
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://cs-star.onrender.com").rstrip("/")
 
-
-def ensure_posts_schema():
-    expected_columns = {
-        "hide_like_count": "BOOLEAN DEFAULT 0",
-        "hide_share_count": "BOOLEAN DEFAULT 0",
-        "comments_enabled": "BOOLEAN DEFAULT 1",
-        "downloads_enabled": "BOOLEAN DEFAULT 1",
-        "is_pinned": "BOOLEAN DEFAULT 0",
-        "show_on_grid": "BOOLEAN DEFAULT 1",
-        "share_count": "INTEGER DEFAULT 0",
-    }
-
-    with engine.begin() as connection:
-        existing_columns = {
-            row[1]
-            for row in connection.exec_driver_sql("PRAGMA table_info(posts)").fetchall()
-        }
-
-        for column_name, definition in expected_columns.items():
-            if column_name not in existing_columns:
-                connection.exec_driver_sql(
-                    f"ALTER TABLE posts ADD COLUMN {column_name} {definition}"
-                )
-
-def ensure_messages_schema():
-    expected_columns = {
-        "is_read": "BOOLEAN DEFAULT 0",
-        "replied_to_id": "INTEGER",
-        "reactions": "TEXT DEFAULT '{}'",
-        "message_type": "TEXT DEFAULT 'text'",
-        "media_url": "TEXT",
-    }
-    with engine.begin() as connection:
-        existing_columns = {
-            row[1]
-            for row in connection.exec_driver_sql("PRAGMA table_info(messages)").fetchall()
-        }
-        for column_name, definition in expected_columns.items():
-            if column_name not in existing_columns:
-                connection.exec_driver_sql(
-                    f"ALTER TABLE messages ADD COLUMN {column_name} {definition}"
-                )
-
-def ensure_users_schema():
-    expected_columns = {
-        "website": "TEXT DEFAULT ''",
-        "gender": "TEXT DEFAULT 'Prefer not to say'",
-        "full_name": "TEXT DEFAULT ''",
-        "created_at": "DATETIME",
-    }
-    with engine.begin() as connection:
-        existing_columns = {
-            row[1]
-            for row in connection.exec_driver_sql("PRAGMA table_info(users)").fetchall()
-        }
-        for column_name, definition in expected_columns.items():
-            if column_name not in existing_columns:
-                connection.exec_driver_sql(
-                    f"ALTER TABLE users ADD COLUMN {column_name} {definition}"
-                )
-
-def ensure_user_settings_schema():
-    expected_columns = {
-        "hidden_story_live_from": "TEXT DEFAULT '[]'",
-        "message_controls": "BOOLEAN DEFAULT 1",
-        "message_request_audience": "TEXT DEFAULT 'everyone'",
-        "group_invite_audience": "TEXT DEFAULT 'everyone'",
-        "story_reply_audience": "TEXT DEFAULT 'everyone'",
-        "show_activity_status": "BOOLEAN DEFAULT 1",
-        "tag_audience": "TEXT DEFAULT 'everyone'",
-        "mention_audience": "TEXT DEFAULT 'everyone'",
-        "manual_tag_approval": "BOOLEAN DEFAULT 0",
-        "comment_audience": "TEXT DEFAULT 'everyone'",
-        "gif_comments_enabled": "BOOLEAN DEFAULT 1",
-        "story_shares_enabled": "BOOLEAN DEFAULT 1",
-        "posts_reels_to_stories_enabled": "BOOLEAN DEFAULT 1",
-        "reposts_enabled": "BOOLEAN DEFAULT 1",
-        "website_embeds_enabled": "BOOLEAN DEFAULT 0",
-        "featured_content_requests_enabled": "BOOLEAN DEFAULT 1",
-        "hide_like_counts": "BOOLEAN DEFAULT 0",
-        "hide_share_counts": "BOOLEAN DEFAULT 0",
-        "app_language": "TEXT DEFAULT 'en'",
-    }
-    with engine.begin() as connection:
-        existing_columns = {
-            row[1]
-            for row in connection.exec_driver_sql("PRAGMA table_info(user_settings)").fetchall()
-        }
-        for column_name, definition in expected_columns.items():
-            if column_name not in existing_columns:
-                connection.exec_driver_sql(
-                    f"ALTER TABLE user_settings ADD COLUMN {column_name} {definition}"
-                )
 
 # Enable CORS
 app.add_middleware(
@@ -136,19 +44,11 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Routes
 try:
-    print("DEBUG: Creating database tables...")
+    print("DEBUG: Initializing database...")
     Base.metadata.create_all(bind=engine)
-    print("DEBUG: Checking posts schema...")
-    ensure_posts_schema()
-    print("DEBUG: Checking messages schema...")
-    ensure_messages_schema()
-    print("DEBUG: Checking users schema...")
-    ensure_users_schema()
-    print("DEBUG: Checking user settings schema...")
-    ensure_user_settings_schema()
-    print("DEBUG: Schema setup complete.")
+    print("DEBUG: Database initialization complete.")
 except Exception as e:
-    print(f"CRITICAL: Database/Schema initialization failed: {e}")
+    print(f"CRITICAL: Database initialization failed: {e}")
     import traceback
     traceback.print_exc()
 
@@ -162,6 +62,7 @@ try:
     app.include_router(chat_router, prefix="/chat")
     app.include_router(settings_router, prefix="/settings")
     app.include_router(activity_router, prefix="/activity")
+    app.include_router(story_router, prefix="/story")
     print("DEBUG: All routers included successfully.")
 except Exception as e:
     print(f"CRITICAL: Failed to include routers: {e}")

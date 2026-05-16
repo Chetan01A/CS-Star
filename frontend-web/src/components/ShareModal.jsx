@@ -4,8 +4,12 @@ import { X, Search, Link2, Facebook, MessageCircle, Mail, Twitter, Send, Check, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
 import { buildAssetUrl } from '../config';
+import { useNotice } from '../context/NoticeContext';
+
 
 const ShareModal = ({ onClose, post }) => {
+  const { showNotice } = useNotice();
+
   const [search, setSearch] = useState('');
   const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [suggestedUsers, setSuggestedUsers] = useState([]);
@@ -13,28 +17,22 @@ const ShareModal = ({ onClose, post }) => {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState('list'); // 'list' or 'success'
 
-  // Fetch following/followers on mount as initial suggestions
+  // Fetch contacts on mount — people you've chatted with + followers/following (like Instagram)
   useEffect(() => {
     const fetchInitialUsers = async () => {
       try {
-        const me = await api.get('/auth/me');
-        const [followingData, followersData] = await Promise.all([
-          api.get(`/profile/following/${me.id}`),
-          api.get(`/profile/followers/${me.id}`)
-        ]);
+        const data = await api.get('/chat/contacts');
+        const contacts = data.contacts || [];
 
-        const combined = [...(followingData.following || []), ...(followersData.followers || [])];
-        // Deduplicate by ID
-        const unique = Array.from(new Map(combined.map(u => [u.id, u])).values());
-        
-        setSuggestedUsers(unique.map(u => ({
-          id: u.id,
-          name: u.username,
-          username: u.username,
-          avatar: u.profile_pic
+        setSuggestedUsers(contacts.map(c => ({
+          id: c.id,
+          name: c.username,
+          username: c.username,
+          avatar: c.profile_pic,
+          lastMessage: c.last_message || null,
         })));
       } catch (err) {
-        console.error('Failed to fetch suggested users:', err);
+        console.error('Failed to fetch contacts:', err);
       } finally {
         setLoading(false);
       }
@@ -75,20 +73,25 @@ const ShareModal = ({ onClose, post }) => {
 
   const handleSend = async () => {
     try {
-      const sharePromises = Array.from(selectedUsers).map(userId => 
+      const isVideo = (post.image_url || post.post_image_url || '').match(/\.(mp4|webm|mov|avi|mkv)$/i);
+      const shareUrl = isVideo
+        ? `${window.location.origin}/reels?post=${post.post_id}`
+        : `${window.location.origin}/post/${post.post_id}`;
+
+      const sharePromises = Array.from(selectedUsers).map(userId =>
         api.post('/chat/send', {
           to: userId,
-          text: `Check out this post: ${window.location.origin}/post/${post.post_id}`,
+          text: shareUrl,
           message_type: 'post_share',
-          media_url: post.image_url || post.post_image_url
+          media_url: post.image_url || post.post_image_url || null,
         })
       );
-      
+
       await Promise.all(sharePromises);
       setStep('success');
     } catch (err) {
       console.error('Failed to share:', err);
-      alert('Failed to share with some friends.');
+      showNotice('Failed to share with some friends.', 'error');
     }
   };
 
@@ -146,72 +149,81 @@ const ShareModal = ({ onClose, post }) => {
               </div>
             </div>
 
-            {/* User Grid */}
+            {/* User List — Instagram style */}
             <div style={{ 
-              flex: 1, overflowY: 'auto', padding: '0 24px 20px',
-              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px'
+              flex: 1, overflowY: 'auto', padding: '0 0 8px',
             }} className="no-scrollbar">
               {loading && displayedUsers.length === 0 ? (
-                <div style={{ gridColumn: 'span 4', textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
+                <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
                    <div className="spinner" style={{ margin: '0 auto 12px' }} />
-                   Loading friends...
+                   Loading...
                 </div>
               ) : displayedUsers.length === 0 ? (
-                <div style={{ gridColumn: 'span 4', textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
-                   <User size={32} style={{ opacity: 0.1, marginBottom: '12px' }} />
-                   <p style={{ fontSize: '0.9rem' }}>No friends found</p>
+                <div style={{ textAlign: 'center', padding: '48px 24px', color: 'rgba(255,255,255,0.3)' }}>
+                   <User size={36} style={{ opacity: 0.12, marginBottom: '12px' }} />
+                   <p style={{ fontSize: '0.9rem', margin: 0 }}>
+                     {search.trim() ? 'No users found' : 'No contacts yet. Start a conversation!'}
+                   </p>
                 </div>
               ) : displayedUsers.map(u => {
                 const isSelected = selectedUsers.has(u.id);
                 return (
-                  <div 
-                    key={u.id} 
+                  <div
+                    key={u.id}
                     onClick={() => toggleUser(u.id)}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', textAlign: 'center', cursor: 'pointer', position: 'relative' }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '14px',
+                      padding: '12px 24px', cursor: 'pointer',
+                      background: isSelected ? 'rgba(255,255,255,0.04)' : 'transparent',
+                      transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <div style={{ 
-                      width: '74px', height: '74px', borderRadius: '50%', 
-                      background: isSelected ? 'var(--accent-gradient)' : 'rgba(255,255,255,0.05)', 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                      overflow: 'hidden', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                      padding: '2px', position: 'relative',
-                      transform: isSelected ? 'scale(1.05)' : 'scale(1)'
+                    {/* Avatar */}
+                    <div style={{
+                      width: '52px', height: '52px', borderRadius: '50%', flexShrink: 0,
+                      background: isSelected ? 'var(--accent-gradient)' : 'rgba(255,255,255,0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      overflow: 'hidden', padding: isSelected ? '2px' : '0',
+                      transition: 'all 0.2s', position: 'relative',
                     }}>
-                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#121212', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1a1a' }}>
                         {u.avatar ? (
                           <img src={buildAssetUrl(u.avatar)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                         ) : (
-                          <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'white', opacity: 0.8 }}>{(u.name || 'U')[0]}</span>
+                          <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'white', opacity: 0.8 }}>{(u.name || 'U')[0].toUpperCase()}</span>
                         )}
                       </div>
-                      
-                      {/* Selection Indicator */}
-                      <AnimatePresence>
-                        {isSelected && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            exit={{ scale: 0 }}
-                            style={{
-                              position: 'absolute', bottom: '2px', right: '2px',
-                              background: 'var(--accent-color, #00d2ff)', color: 'black',
-                              width: '22px', height: '22px', borderRadius: '50%',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              boxShadow: '0 4px 10px rgba(0,0,0,0.5)', zIndex: 10
-                            }}
-                          >
-                            <Check size={14} strokeWidth={4} />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
                     </div>
-                    <span style={{ fontSize: '0.8rem', color: isSelected ? 'white' : 'rgba(255,255,255,0.6)', fontWeight: isSelected ? 700 : 500, lineHeight: 1.2, maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {u.name}
-                    </span>
+
+                    {/* Name + Last Message */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontWeight: isSelected ? 700 : 600, fontSize: '0.97rem', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {u.name}
+                      </p>
+                      {u.lastMessage && (
+                        <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {u.lastMessage}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Selection Circle */}
+                    <div style={{
+                      width: '26px', height: '26px', borderRadius: '50%', flexShrink: 0,
+                      border: isSelected ? 'none' : '2px solid rgba(255,255,255,0.2)',
+                      background: isSelected ? 'var(--accent-color, #00d2ff)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.2s',
+                    }}>
+                      {isSelected && <Check size={15} strokeWidth={3} color="black" />}
+                    </div>
                   </div>
                 );
               })}
             </div>
+
 
             {/* Bottom Action Area */}
             <div style={{ background: '#181818', borderTop: '1px solid rgba(255,255,255,0.06)', paddingBottom: selectedUsers.size > 0 ? '0' : '20px' }}>
